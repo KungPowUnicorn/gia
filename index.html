@@ -512,8 +512,8 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     </div>
     <div class="stat-item" style="margin-left:auto;">
       <span id="stat-version"></span>
+    </div>
   </div>
-</div>
 
 </div><!-- #app -->
 
@@ -1099,9 +1099,9 @@ function renderDetail(id) {
 
   document.getElementById('det-foot').innerHTML = `
     <button class="btn btn-primary" onclick="copyPrompt('${p.id}')">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy${isSplit?' Pos':''}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy${isSplit?' POS':''}
     </button>
-    ${isSplit && p.bodyNegative ? `<button class="btn btn-ghost" onclick="copyNegative('${p.id}')">Copy Neg</button>` : ''}
+    ${isSplit && p.bodyNegative ? `<button class="btn btn-ghost" onclick="copyNegative('${p.id}')">Copy NEG</button>` : ''}
     <button class="btn btn-ghost" onclick="openEdit('${p.id}')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit
     </button>
@@ -1319,9 +1319,12 @@ function promptModal(prompt) {
   acWrap.className = 'autocomplete-wrap';
   const acList = document.createElement('div');
   acList.className = 'autocomplete-list';
-  acWrap.appendChild(wrap);   // move tags-wrap into the autocomplete wrap
-  acWrap.appendChild(acList);
+  // Anchor acWrap in the DOM FIRST, then move wrap into it.
+  // Moving wrap first makes wrap.parentNode === acWrap, so the
+  // subsequent insertBefore would throw a HierarchyRequestError.
   wrap.parentNode.insertBefore(acWrap, wrap);
+  acWrap.appendChild(wrap);
+  acWrap.appendChild(acList);
 
   let acIdx = -1;
   function addTag(tag) {
