@@ -91,6 +91,7 @@ Because mouse-clicking is so 2005:
 2. **Double‑click it.** It opens in your browser.
 3. **Click "New Prompt"** and start building your library.
 4. That's it. No installation, no command lines, no sacrificing a keyboard to the tech gods.
+5. Two backup files included for testing. Password: gia
 
 ---
 
