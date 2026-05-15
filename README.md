@@ -24,8 +24,6 @@ Also, "GIA" is short, cute, and sounds like a friendly robot name.
 
 ## What can GIA actually do?
 
-Here's the simple version:
-
 ### 1. Save Prompts (Duh)
 Give your prompt a **title**, pick a **category** (Text, Images, Audio, Video, Other), write (or paste) the actual prompt text, and hit save. It's like writing a recipe card, but instead of "chocolate chip cookies," it's "generate a cinematic cyberpunk cat in the rain."
 
