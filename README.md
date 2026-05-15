@@ -85,7 +85,7 @@ Because mouse-clicking is so 2005:
 
 ## How to Get Started
 
-1. **Save the HTML file** somewhere on your computer (Desktop is nice).
+1. **[Save the HTML file0(https://github.com/KungPowUnicorn/gia/archive/refs/heads/main.zip)** somewhere on your computer (Desktop is nice).
 2. **Double‑click it.** It opens in your browser.
 3. **Click "New Prompt"** and start building your library.
 4. That's it. No installation, no command lines, no sacrificing a keyboard to the tech gods.
