@@ -79,6 +79,7 @@ Because mouse-clicking is so 2005:
 - **Esc** — Close any open panel or modal
 - **G** — Grid view
 - **L** — List view
+- **Ctrl+S** — Save Prompt
 - **Ctrl+E** — Backup options
 
 ---
@@ -102,6 +103,7 @@ If you're not technical, skip this. But if you're nosy:
 - Prompts are **XOR‑encrypted** before storage—a simple, fast, reversible encryption method. The key is baked into the app (so don't lose the app file if you're paranoid).
 - Backup files are JSON (or encrypted blobs) that you can download and drag‑drop back into GIA to restore.
 - Thumbnails are generated using the browser's canvas element (for images) or video element (for videos) and stored as base64 data URLs inside the prompt object.
+- Works on mobile. Most of the time.
 
 ---
 
