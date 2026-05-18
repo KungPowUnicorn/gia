@@ -188,7 +188,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
   position: relative;
   overflow: hidden;
   height: 100%;
-  min-height: 300px;   /* ← all cards at least 300px tall */
+  min-height: 300px;
 }
 .prompt-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 0.1429rem; background: transparent; transition: background var(--t); }
 .prompt-card:hover { border-color: var(--border-light); background: var(--bg-elevated); transform: translateY(-0.0714rem); box-shadow: 0 0.4286rem 1.7143rem rgba(0,0,0,0.35); }
@@ -204,7 +204,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 
 .card-cat { font-size: 0.75rem; color: var(--text-muted); }
 
-/* Clamped body text */
 .card-body {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -524,7 +523,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
   :root { --sidebar-w: 15.5714rem; }
   #btn-hamburger { display: flex; }
   .logo-text { display: none; }
-  #btn-pin-sidebar { display: none; }   /* ← add this line */
+  #btn-pin-sidebar { display: none; }
   #sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 500; transform: translateX(-100%); }
   #sidebar.open { transform: translateX(0); }
   #sidebar.unpinned:hover { width: var(--sidebar-w); }
@@ -538,7 +537,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
 
 @media (max-width: 650px) {
   .prompts-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 0.5rem; }
-  .card-body { display: none; }   /* hide body on mobile grid for clean look */
+  .card-body { display: none; }
   .card-cat { font-size: 0.8rem; }
   .card-title { font-size: 0.9rem; }
   .card-date { font-size: 0.7rem; }
@@ -688,7 +687,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     </div>
   </div>
 
-  <!-- STATUS BAR -->
+  <!-- ── STATUS BAR ── -->
   <div id="statusbar">
     <div class="stat-item">
       <div class="stat-dot" id="stat-dot"></div>
@@ -705,7 +704,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
       >GIA v1.1.0</a>
     </div>
     </div>
-  </div>
+</div><!-- /#app -->
 
 <input type="file" id="file-input" accept=".json,.gia" style="display:none">
 
@@ -847,7 +846,6 @@ function toggleFullpagePrompt(el) {
   const content = document.getElementById('fullpage-prompt-content');
 
   if (overlay.classList.contains('open')) {
-    // Move back
     const returnParent = overlay._returnParent;
     if (returnParent && el.parentElement === content) {
       returnParent.appendChild(el);
@@ -856,7 +854,6 @@ function toggleFullpagePrompt(el) {
     overlay._returnParent = null;
     overlay._promptEl = null;
   } else {
-    // Store parent and move
     overlay._returnParent = el.parentElement;
     overlay._promptEl = el;
     content.appendChild(el);
@@ -913,7 +910,7 @@ const db = new GDB();
 const S = {
   prompts: [],
   customCats: [],
-  view: 'grid',
+  view: 'list',
   filter: { type:'all', val:null, search:'' },
   sort: 'newest',
   selectedId: null,
@@ -999,20 +996,84 @@ function generateThumbnail(fileObj, maxW = 200) {
       video.preload = 'metadata';
       video.muted = true;
       video.playsInline = true;
-      video.src = URL.createObjectURL(fileObj);
-      video.onloadeddata = () => { video.currentTime = Math.min(1, video.duration * 0.1); };
+
+      const blobUrl = URL.createObjectURL(fileObj);
+
+      // Safety net: give up after 8 seconds
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('Video thumbnail timed out'));
+      }, 8000);
+
+      // onloadedmetadata fires as soon as duration/dimensions are known,
+      // which is sufficient to seek — no need to wait for frame data.
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(1, video.duration * 0.1);
+      };
+
       video.onseeked = () => {
+        clearTimeout(timeout);
         const canvas = document.createElement('canvas');
         canvas.width = 320; canvas.height = 180;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(video.src);
+        URL.revokeObjectURL(blobUrl);
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
-      video.onerror = () => { URL.revokeObjectURL(video.src); reject(new Error('Video loading failed')); };
+
+      video.onerror = () => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('Video loading failed'));
+      };
+
+      video.src = blobUrl;
     } else {
       resolve(null);
     }
   });
+}
+
+/* ═══════════════════════════════════════════════════
+   LINK PREVIEW REFRESH
+   ═══════════════════════════════════════════════════ */
+async function fetchLinkPreviews(force = false) {
+  const candidates = S.prompts.filter(p =>
+    p.link && (force || !p.previewData) && IMG_EXT.test(p.link)
+  );
+  if (!candidates.length) {
+    toast('No image links found to preview');
+    return;
+  }
+  toast(`Fetching ${candidates.length} preview(s)…`);
+  let count = 0;
+  for (const p of candidates) {
+    await new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      // Per-image timeout so one stalled resource can't block the whole batch
+      const timer = setTimeout(() => { img.src = ''; resolve(); }, 6000);
+      img.onload = async () => {
+        clearTimeout(timer);
+        try {
+          const scale = Math.min(1, 200 / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          p.previewData = canvas.toDataURL('image/jpeg', 0.75);
+          await db.savePrompt(p);
+          count++;
+        } catch { /* canvas tainted by CORS — skip silently */ }
+        resolve();
+      };
+      img.onerror = () => { clearTimeout(timer); resolve(); };
+      img.src = p.link;
+    });
+  }
+  renderSidebar();
+  renderContent();
+  if (S.selectedId) renderDetail(S.selectedId);
+  toast(`✓ Updated ${count} of ${candidates.length} preview(s)`);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1100,16 +1161,11 @@ function renderSidebar() {
     return `<span class="sb-tag${active?' active':''}" data-tag="${esc(tag)}">#${esc(tag)}<span style="opacity:.5;margin-left:0.2143rem;font-size:0.6786rem">${count}</span></span>`;
   }).join('');
 
-  // Category header
   catEl.querySelectorAll('.cat-header').forEach(el=>{
     el.addEventListener('click',()=>{
       const subsEl = document.getElementById('subs-'+el.dataset.id);
-      if (subsEl) {
-        subsEl.classList.toggle('open');
-      }
-      // Set the filter to this category (shows prompts in the category)
+      if (subsEl) subsEl.classList.toggle('open');
       setFilter('cat', el.dataset.cat);
-      // Do NOT close the sidebar on mobile – let user see subs
     });
   });
   catEl.querySelectorAll('.sub-item').forEach(el=>{
@@ -1390,16 +1446,12 @@ function applyFontSettings() {
   document.documentElement.style.fontSize = S.fontSize;
 }
 
-// Pin logic using the topbar button
 let sidebarPinned = true;
 function applyPinState() {
   const sidebar = document.getElementById('sidebar');
   const pinBtn = document.getElementById('btn-pin-sidebar');
   const isMobile = window.innerWidth <= 850;
-
-  // On mobile, always act as if pinned (ignore stored preference)
   const effectivePinned = isMobile ? true : sidebarPinned;
-
   if (effectivePinned) {
     sidebar.classList.remove('unpinned');
     pinBtn.classList.add('pinned');
@@ -1414,13 +1466,13 @@ async function initPin() {
   applyPinState();
   document.getElementById('btn-pin-sidebar').addEventListener('click', () => {
     sidebarPinned = !sidebarPinned;
+    db.setSetting('sidebarPinned', sidebarPinned);
     applyPinState();
   });
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-// Close sidebar on mobile when clicking outside (not on cat-header)
 document.addEventListener('click', function(e) {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar.classList.contains('open')) return;
@@ -1440,8 +1492,31 @@ function openDetail(id) {
 }
 function closeDetail() { S.selectedId = null; document.getElementById('detail').classList.remove('open'); document.querySelectorAll('[data-card],[data-li]').forEach(el=>el.classList.remove('selected')); }
 async function toggleFav(id) { const p = S.prompts.find(x=>x.id===id); if(!p) return; p.fav = !p.fav; p.updatedAt = Date.now(); await db.savePrompt(p); renderSidebar(); renderContent(); if(S.selectedId===id) renderDetail(id); }
-async function copyPrompt(id) { const p = S.prompts.find(x=>x.id===id); if(!p) return; try { await navigator.clipboard.writeText(p.body||''); p.lastUsed = Date.now(); await db.savePrompt(p); toast('✓ Copied to clipboard'); } catch { toast('⚠ Clipboard access denied by browser'); } }
-async function copyNegative(id) { const p = S.prompts.find(x=>x.id===id); if(!p) return; try { await navigator.clipboard.writeText(p.bodyNegative||''); toast('✓ Negative prompt copied'); } catch { toast('⚠ Clipboard access denied'); } }
+
+async function copyPrompt(id) {
+  const p = S.prompts.find(x=>x.id===id);
+  if(!p) return;
+  try {
+    await navigator.clipboard.writeText(p.body||'');
+    p.lastUsed = Date.now();
+    await db.savePrompt(p);
+    if (S.selectedId === id) renderDetail(id);
+    toast('✓ Copied to clipboard');
+  } catch { toast('⚠ Clipboard access denied by browser'); }
+}
+
+async function copyNegative(id) {
+  const p = S.prompts.find(x=>x.id===id);
+  if(!p) return;
+  try {
+    await navigator.clipboard.writeText(p.bodyNegative||'');
+    p.lastUsed = Date.now();
+    await db.savePrompt(p);
+    if (S.selectedId === id) renderDetail(id);
+    toast('✓ Negative prompt copied');
+  } catch { toast('⚠ Clipboard access denied'); }
+}
+
 async function deletePrompt(id) { if(!confirm('Delete this prompt? This is permanent.')) return; await db.deletePrompt(id); S.prompts = S.prompts.filter(p=>p.id!==id); if(S.selectedId===id) closeDetail(); renderSidebar(); renderContent(); toast('Prompt deleted'); }
 
 /* ═══════════════════════════════════════════════════
@@ -1538,7 +1613,6 @@ function promptModal(prompt) {
 </div>`;
   document.body.appendChild(ov);
 
-  // Tags chip management
   const wrap = ov.querySelector('#tags-wrap'), inp = ov.querySelector('#tags-inp');
   function renderChips() {
     wrap.querySelectorAll('.tag-chip').forEach(el=>el.remove());
@@ -1579,7 +1653,7 @@ function promptModal(prompt) {
       .sort((a,b) => a.localeCompare(b))
       .slice(0, 8);
     if (!matches.length) { acList.classList.remove('open'); return; }
-    matches.forEach((t,i) => {
+    matches.forEach((t) => {
       const item = document.createElement('div');
       item.className = 'autocomplete-item';
       item.textContent = '#' + t;
@@ -1620,23 +1694,14 @@ function promptModal(prompt) {
     if (!acWrap.contains(e.target)) acList.classList.remove('open');
   });
 
-  // Category change → update subs
   const fcat = ov.querySelector('#f-cat'), fsub = ov.querySelector('#f-sub'), subReq = ov.querySelector('#sub-req');
   fcat.addEventListener('change', e=>{
     const cat=allCats().find(c=>c.name===e.target.value);
     fsub.innerHTML=`<option value="">None</option>${(cat?.subs||[]).map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}`;
-    // if cat has subs, show subcategory as required
-    if (cat?.subs?.length) {
-      subReq.style.display = '';
-    } else {
-      subReq.style.display = 'none';
-    }
+    if (cat?.subs?.length) { subReq.style.display = ''; } else { subReq.style.display = 'none'; }
   });
-  // trigger on load
   fcat.dispatchEvent(new Event('change'));
-    if (prompt?.subcategory) {
-    fsub.value = prompt.subcategory;
-  }
+  if (prompt?.subcategory) { fsub.value = prompt.subcategory; }
 
   ov.querySelector('#ptype-standard').addEventListener('click', () => {
     promptBodyType = 'standard';
@@ -1651,7 +1716,6 @@ function promptModal(prompt) {
     ov.querySelector('#ptype-standard').classList.remove('active');
     ov.querySelector('#body-split-wrap').style.display = '';
     ov.querySelector('#body-standard-wrap').style.display = 'none';
-    // Copy existing body to positive if switching
     const stdBody = ov.querySelector('#f-body').value.trim();
     const posField = ov.querySelector('#f-body-pos');
     if (stdBody && !posField.value.trim()) posField.value = stdBody;
@@ -1659,17 +1723,14 @@ function promptModal(prompt) {
 
   ov.querySelector('#f-preview-file').addEventListener('change', e => { previewFile = e.target.files[0] || null; });
 
-  const close = ()=>{
+  const close = () => {
     document.removeEventListener('keydown', ctrlSHandler);
     ov.remove();
   };
   const saveBtn = ov.querySelector('#m-save');
 
   function ctrlSHandler(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      saveBtn.click();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveBtn.click(); }
   }
   document.addEventListener('keydown', ctrlSHandler);
 
@@ -1679,12 +1740,7 @@ function promptModal(prompt) {
   let maximized = false;
   ov.querySelector('#modal-maximize').addEventListener('click', () => {
     maximized = !maximized;
-    const modal = ov.querySelector('.modal');
-    if (maximized) {
-      modal.classList.add('maximized');
-    } else {
-      modal.classList.remove('maximized');
-    }
+    ov.querySelector('.modal').classList.toggle('maximized', maximized);
   });
 
   saveBtn.addEventListener('click', async ()=>{
@@ -1693,7 +1749,6 @@ function promptModal(prompt) {
     const sub = ov.querySelector('#f-sub').value;
     if(!title){ov.querySelector('#f-title').focus();toast('⚠ Title is required');return;}
     if(!cat){ov.querySelector('#f-cat').focus();toast('⚠ Category is required');return;}
-    // subcategory required if parent has subs
     const catObj = allCats().find(c=>c.name===cat);
     if (catObj?.subs?.length && !sub) {
       ov.querySelector('#f-sub').focus();
@@ -1760,25 +1815,8 @@ function promptModal(prompt) {
 }
 
 /* ═══════════════════════════════════════════════════
-   MANAGE CATEGORIES MODAL
+   MANAGE TAGS MODAL
    ═══════════════════════════════════════════════════ */
-function showFontsModal() {
-  const ov = document.createElement('div'); ov.className = 'overlay';
-  ov.innerHTML = `<div class="modal sm"><div class="modal-head"><div class="modal-title">Fonts</div><button class="modal-x">×</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">UI Font</label><select class="form-select" id="ap-ui-font">${['Outfit','Inter','Roboto','Open Sans','system-ui','Georgia, serif'].map(f=>`<option value="${f}"${S.uiFont===f?' selected':''}>${f}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">Mono Font</label><select class="form-select" id="ap-mono-font">${['JetBrains Mono','Fira Code','Source Code Pro','Inconsolata','monospace'].map(f=>`<option value="${f}"${S.monoFont===f?' selected':''}>${f}</option>`).join('')}</select></div>
-        </div>
-    <div class="modal-foot"><button class="btn btn-ghost" id="ap-cancel">Cancel</button><button class="btn btn-primary" id="ap-save">Save</button></div></div>`;
-  document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.querySelector('#ap-cancel').onclick = () => ov.remove();
-  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
-  ov.querySelector('#ap-save').onclick = async () => {
-    S.uiFont = ov.querySelector('#ap-ui-font').value; S.monoFont = ov.querySelector('#ap-mono-font').value;
-    applyFontSettings(); await db.setSetting('uiFont', S.uiFont); await db.setSetting('monoFont', S.monoFont);
-    ov.remove(); toast('✓ Fonts saved');
-  };
-}
-
 async function showManageTagsModal() {
   const tags = allTags();
   const ov = document.createElement('div'); ov.className = 'overlay';
@@ -1810,7 +1848,6 @@ async function showManageTagsModal() {
   ov.querySelector('#mt-close').onclick = () => ov.remove();
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 
-  // ── Function to refresh the tag list without closing the modal ──
   const refreshTagList = () => {
     const updatedTags = allTags();
     const list = ov.querySelector('#mt-tag-list');
@@ -1829,11 +1866,9 @@ async function showManageTagsModal() {
         <button class="btn btn-ghost cancel-rename-btn" style="height:1.8rem;font-size:0.75rem;display:none">Cancel</button>
       </div>
     `).join('');
-    // Re-attach listeners to the new elements
     attachTagEditorListeners();
   };
 
-  // ── Function that attaches listeners to all tag‑editor rows ──
   const attachTagEditorListeners = () => {
   ov.querySelectorAll('.tag-editor').forEach(row => {
     const tag = row.dataset.tag;
@@ -1852,14 +1887,9 @@ async function showManageTagsModal() {
       input.style.display = 'none'; renameBtn.style.display = ''; deleteBtn.style.display = '';
       saveBtn.style.display = 'none'; cancelBtn.style.display = 'none';
     });
-    
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveBtn.click();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
       });
-
     saveBtn.addEventListener('click', async () => {
       const newTag = input.value.trim().toLowerCase().replace(/\s+/g,'-');
       if (!newTag || newTag === tag) return;
@@ -1870,9 +1900,8 @@ async function showManageTagsModal() {
         }
       }
       renderSidebar(); renderContent();
-        refreshTagList();   // ← update in place, no flicker
+        refreshTagList();
     });
-
     deleteBtn.addEventListener('click', async () => {
       if (!confirm(`Delete tag #${tag} from all prompts?`)) return;
       for (const p of S.prompts) {
@@ -1887,7 +1916,6 @@ async function showManageTagsModal() {
   });
   };
 
-  // Attach listeners for the first time
   attachTagEditorListeners();
 }
 
@@ -1934,6 +1962,9 @@ function settingsAction(action) {
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   FONTS MODAL
+   ═══════════════════════════════════════════════════ */
 function showFontsModal() {
   const ov = document.createElement('div'); ov.className = 'overlay';
   ov.innerHTML = `<div class="modal sm"><div class="modal-head"><div class="modal-title">Fonts</div><button class="modal-x">×</button></div>
@@ -1942,11 +1973,16 @@ function showFontsModal() {
       <div class="form-group"><label class="form-label">Mono Font</label><select class="form-select" id="ap-mono-font">${['JetBrains Mono','Fira Code','Source Code Pro','Inconsolata','monospace'].map(f=>`<option value="${f}"${S.monoFont===f?' selected':''}>${f}</option>`).join('')}</select></div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" id="ap-cancel">Cancel</button><button class="btn btn-primary" id="ap-save">Save</button></div></div>`;
-  document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.querySelector('#ap-cancel').onclick = () => ov.remove();
+  document.body.appendChild(ov);
+  ov.querySelector('.modal-x').onclick = () => ov.remove();
+  ov.querySelector('#ap-cancel').onclick = () => ov.remove();
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
   ov.querySelector('#ap-save').onclick = async () => {
-    S.uiFont = ov.querySelector('#ap-ui-font').value; S.monoFont = ov.querySelector('#ap-mono-font').value;
-    applyFontSettings(); await db.setSetting('uiFont', S.uiFont); await db.setSetting('monoFont', S.monoFont);
+    S.uiFont = ov.querySelector('#ap-ui-font').value;
+    S.monoFont = ov.querySelector('#ap-mono-font').value;
+    applyFontSettings();
+    await db.setSetting('uiFont', S.uiFont);
+    await db.setSetting('monoFont', S.monoFont);
     ov.remove(); toast('✓ Fonts saved');
   };
 }
@@ -1964,7 +2000,9 @@ function showBackupModal() {
       <input type="file" id="bu-file-input" accept=".json,.gia" style="display:none">
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" id="bu-close">Close</button></div></div>`;
-  document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.querySelector('#bu-close').onclick = () => ov.remove();
+  document.body.appendChild(ov);
+  ov.querySelector('.modal-x').onclick = () => ov.remove();
+  ov.querySelector('#bu-close').onclick = () => ov.remove();
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 
   const fileInput = ov.querySelector('#bu-file-input');
@@ -2000,7 +2038,7 @@ async function doImport(file) {
       try { data = JSON.parse(decrypted); } catch { toast('⚠ Decryption succeeded but file is not valid JSON'); return; }
     } else { data = JSON.parse(text); }
     if(!data.prompts){toast('⚠ Invalid backup file — no prompts found');return;}
-    const confirm_merge = confirm(`Import ${data.prompts.length} prompts? Duplicates (by ID) will be skipped.`); if(!confirm_merge) return;
+    const confirmMerge = confirm(`Import ${data.prompts.length} prompts? Duplicates (by ID) will be skipped.`); if(!confirmMerge) return;
     const existIds = new Set(S.prompts.map(p=>p.id)); let added=0;
     for(const p of data.prompts){ if(!existIds.has(p.id)){ await db.savePrompt(p); S.prompts.push(p); added++; } }
     if(data.categories){
@@ -2049,14 +2087,12 @@ async function showManageCatsModal() {
 
   const origClose = () => ov.remove();
 
-  // Icon picker (same as before)
   ov.querySelectorAll('.icon-picker-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const editor = btn.closest('.cat-editor');
       const currentIconKey = editor.dataset.iconKey || cats.find(c => c.id === editor.dataset.id)?.iconKey || 'other';
       const picker = document.createElement('div');
-      picker.className = 'overlay';
-      picker.style.zIndex = '1100';
+      picker.className = 'overlay'; picker.style.zIndex = '1100';
       picker.innerHTML = `<div class="modal sm" style="width:auto;max-width:90vw;">
         <div class="modal-head"><div class="modal-title">Choose Icon</div><button class="modal-x">×</button></div>
         <div class="modal-body" style="display:grid;grid-template-columns: repeat(5,1fr);gap:0.5rem;padding:1rem">
@@ -2076,23 +2112,17 @@ async function showManageCatsModal() {
     });
   });
 
-  // Delete custom category
   ov.querySelectorAll('.cat-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const editor = btn.closest('.cat-editor');
-      const id = editor.dataset.id;
       if (!confirm('Delete this custom category? Prompts in it will remain with the old name.')) return;
       editor.remove();
     });
   });
 
-  // Add subcategory
   ov.querySelectorAll('.add-sub-btn').forEach(btn => {
       const container = btn.closest('.cat-editor');
       const input = container.querySelector('.new-sub-input');
-      const addBtn = btn;  // reference
-
-      // Click handler
       btn.addEventListener('click', () => {
       const sub = input.value.trim();
       if (!sub) return;
@@ -2104,20 +2134,11 @@ async function showManageCatsModal() {
       inputDiv.parentNode.insertBefore(chip, inputDiv);
       input.value = '';
     });
-
-      // ── Press Enter in the input → add ──
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          addBtn.click();
-        }
-      });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } });
   });
 
-  // Remove subcategory
   ov.querySelectorAll('.sub-remove').forEach(btn => btn.addEventListener('click', () => btn.parentElement.remove()));
 
-  // Add category button
   ov.querySelector('#mc-add-cat').addEventListener('click', () => {
     const list = ov.querySelector('#mc-cat-list');
     const id = 'custom_' + uid();
@@ -2136,6 +2157,7 @@ async function showManageCatsModal() {
       </div>`;
     list.insertAdjacentHTML('beforeend', html);
     const newEditor = list.lastElementChild;
+
     newEditor.querySelector('.icon-picker-btn').addEventListener('click', () => {
       const btnIcon = newEditor.querySelector('.icon-picker-btn');
       const currentIconKey = newEditor.dataset.iconKey || 'other';
@@ -2158,47 +2180,69 @@ async function showManageCatsModal() {
         });
       });
     });
+
     newEditor.querySelector('.cat-delete-btn').addEventListener('click', () => {
       if (!confirm('Delete this custom category?')) return;
       newEditor.remove();
     });
 
-    newEditor.querySelector('.add-sub-btn').addEventListener('click', () => {
-      const input = newEditor.querySelector('.new-sub-input');
-      const sub = input.value.trim();
+    const addSubBtn = newEditor.querySelector('.add-sub-btn');
+    const newSubInput = newEditor.querySelector('.new-sub-input');
+    addSubBtn.addEventListener('click', () => {
+      const sub = newSubInput.value.trim();
       if (!sub) return;
       const chip = document.createElement('span');
       chip.style = 'display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;';
       chip.innerHTML = `${esc(sub)} <button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button>`;
       chip.querySelector('.sub-remove').addEventListener('click', () => chip.remove());
-      const inputDiv = input.closest('div');
+      const inputDiv = newSubInput.closest('div');
       inputDiv.parentNode.insertBefore(chip, inputDiv);
-      input.value = '';
+      newSubInput.value = '';
     });
-
-    newEditor.querySelector('.new-sub-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        newEditor.querySelector('.add-sub-btn').click();
-      }
+    newSubInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addSubBtn.click(); }
     });
   });
 
   const saveChanges = async () => {
     const editors = ov.querySelectorAll('.cat-editor');
     const newCustomCats = [];
+    const renames = {}; // oldName -> newName
+
     for (const editor of editors) {
       const id = editor.dataset.id;
-      const name = editor.querySelector('.cat-name-input').value.trim();
-      if (!name) continue;
+      const newName = editor.querySelector('.cat-name-input').value.trim();
+      if (!newName) continue;
+
+      // Look up the pre-edit name from the current allCats() state
+      const existing = allCats().find(c => c.id === id);
+      if (existing && existing.name !== newName) {
+        renames[existing.name] = newName;
+      }
+
       const subs = Array.from(editor.querySelectorAll('.subs-list > span'))
         .map(el => (el.childNodes[0]?.textContent || '').trim())
         .filter(Boolean);
       const iconKey = editor.dataset.iconKey || allCats().find(c => c.id === id)?.iconKey || 'other';
-      newCustomCats.push({ id, name, iconKey, subs });
+      newCustomCats.push({ id, name: newName, iconKey, subs });
     }
+
+    // Migrate all prompts that referenced a renamed category
+    if (Object.keys(renames).length > 0) {
+      for (const p of S.prompts) {
+        if (p.category && renames[p.category]) {
+          p.category = renames[p.category];
+          await db.savePrompt(p);
+        }
+      }
+    }
+
     for (const c of newCustomCats) {
-      try { await db.saveCat(c); } catch (err) { console.error(err); toast('⚠ Failed to save one or more categories.'); return; }
+      try { await db.saveCat(c); } catch (err) {
+        console.error(err);
+        toast('⚠ Failed to save one or more categories.');
+        return;
+      }
     }
     S.customCats = newCustomCats;
     renderSidebar();
@@ -2252,28 +2296,14 @@ function initEvents() {
     const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT';
 
     if (e.key === 'Escape') {
-      // 1. Close full‑page prompt overlay if it's open
       const fpOverlay = document.getElementById('fullpage-prompt-overlay');
       if (fpOverlay && fpOverlay.classList.contains('open')) {
-        const promptEl = fpOverlay._promptEl;
-        const returnParent = fpOverlay._returnParent;
-        if (promptEl && returnParent) {
-          returnParent.appendChild(promptEl);
-        }
-        fpOverlay.classList.remove('open');
-        fpOverlay._returnParent = null;
-        fpOverlay._promptEl = null;
+        closeFullpagePrompt();
         return;
       }
-
-      // 2. Close any active modal overlay
       const ov = document.querySelector('.overlay');
       if (ov) { ov.remove(); return; }
-
-      // 3. Close the detail panel if it's open
       if (S.selectedId) { closeDetail(); return; }
-
-      // 4. Close the settings dropdown if it's visible
       const dd = document.getElementById('settings-dd');
       if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
     }
@@ -2291,9 +2321,7 @@ function initEvents() {
     }
   });
 
-    window.addEventListener('resize', () => {
-    applyPinState();
-  });
+  window.addEventListener('resize', () => { applyPinState(); });
 
   let dragCount=0;
   document.addEventListener('dragenter',e=>{ e.preventDefault(); dragCount++; document.getElementById('drop-zone').classList.add('show'); });
@@ -2310,11 +2338,21 @@ function initEvents() {
 async function init() {
   try {
     await db.init();
-    S.prompts = await db.getAllPrompts(); S.customCats = await db.getAllCats(); S.lastBackup = await db.getSetting('lastBackup');
-    S.sort = await db.getSetting('sort') || 'newest'; document.getElementById('sort-select').value = S.sort;
+    S.prompts = await db.getAllPrompts();
+    S.customCats = await db.getAllCats();
+    S.lastBackup = await db.getSetting('lastBackup');
+    S.sort = await db.getSetting('sort') || 'newest';
+    document.getElementById('sort-select').value = S.sort;
     await initTheme();
-    S.uiFont = await db.getSetting('uiFont') || 'Outfit'; S.monoFont = await db.getSetting('monoFont') || 'JetBrains Mono'; S.fontSize = await db.getSetting('fontSize') || '14px';
-    applyFontSettings(); setView('grid'); renderSidebar(); renderContent(); updateStatus(); initEvents();
+    S.uiFont = await db.getSetting('uiFont') || 'Outfit';
+    S.monoFont = await db.getSetting('monoFont') || 'JetBrains Mono';
+    S.fontSize = await db.getSetting('fontSize') || '14px';
+    applyFontSettings();
+    setView('grid');
+    renderSidebar();
+    renderContent();
+    updateStatus();
+    initEvents();
     await initPin();
     document.getElementById('stat-version').textContent = `GIA v${APP_VERSION}`;
   } catch(err) {
