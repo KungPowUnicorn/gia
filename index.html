@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Source+Code+Pro:wght@400;500;700&family=Inconsolata:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+/* ════════════════════════════════════════════════════════════════════════
+   GLOBAL DESIGN TOKENS & RESET
+   ════════════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html.light {
@@ -41,7 +44,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 0.2143rem; }
 ::-webkit-scrollbar-thumb:hover { opacity: 0.8; }
 
-/* ── LAYOUT ── */
+/* ════════════════════════════════════════════════════════════════════════
+   LAYOUT STRUCTURE
+   ════════════════════════════════════════════════════════════════════════ */
 #app { display: flex; flex-direction: column; height: 100vh; }
 
 #topbar { height: var(--topbar-h); background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1rem; gap: 0.5rem; flex-shrink: 0; z-index: 200; }
@@ -69,10 +74,58 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .btn-icon:hover { background: var(--bg-elevated); color: var(--text-primary); }
 .btn-icon.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(232,160,69,0.35); }
 
-/* ── MAIN ── */
+/* Pin button visual state */
+#btn-pin-sidebar svg { transition: transform 0.2s, fill 0.2s, stroke 0.2s; }
+#btn-pin-sidebar.pinned svg { fill: var(--accent); stroke: var(--accent); transform: rotate(-20deg); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   MAIN AREA: SIDEBAR + CONTENT + DETAIL PANEL
+   ════════════════════════════════════════════════════════════════════════ */
 #main { display: flex; flex: 1; overflow: hidden; }
 
-#sidebar { width: var(--sidebar-w); background: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; transition: transform 0.25s ease; }
+/* ── SIDEBAR ── */
+#sidebar {
+  width: var(--sidebar-w); background: var(--bg-surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
+  transition: transform 0.25s ease, width 0.35s ease;
+  position: relative;
+}
+#sidebar.unpinned {
+  width: 0; overflow: hidden;
+}
+#sidebar.unpinned:hover {
+  width: var(--sidebar-w); overflow-y: auto;
+}
+
+/* Smooth content fade during pin/unpin */
+#sidebar .sb-section,
+#sidebar .sb-label,
+#sidebar .sb-item,
+#sidebar .cat-header,
+#sidebar .sub-item,
+#sidebar .tags-cloud {
+  transition: opacity 0.2s ease;
+}
+
+#sidebar.unpinned .sb-section,
+#sidebar.unpinned .sb-label,
+#sidebar.unpinned .sb-item,
+#sidebar.unpinned .cat-header,
+#sidebar.unpinned .sub-item,
+#sidebar.unpinned .tags-cloud {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#sidebar.unpinned:hover .sb-section,
+#sidebar.unpinned:hover .sb-label,
+#sidebar.unpinned:hover .sb-item,
+#sidebar.unpinned:hover .cat-header,
+#sidebar.unpinned:hover .sub-item,
+#sidebar.unpinned:hover .tags-cloud {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .sb-section { padding: 1rem 0.7143rem 0.2857rem; }
 .sb-label { font-size: 0.6786rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1rem; color: var(--text-muted); padding: 0 0.4286rem; margin-bottom: 0.2143rem; cursor: pointer; user-select: none; }
@@ -89,8 +142,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .cat-header:hover { background: var(--bg-hover); color: var(--text-primary); }
 .cat-header.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
 .cat-header .sb-count { margin-left: auto; }
-.cat-arrow { font-size: 0.5714rem; color: var(--text-muted); width: 0.7143rem; transition: transform var(--t); flex-shrink: 0; }
-.cat-arrow.open { transform: rotate(90deg); }
 .cat-subs { display: none; flex-direction: column; }
 .cat-subs.open { display: flex; }
 .sub-item { display: flex; align-items: center; gap: 0.3571rem; padding: 0.2857rem 0.5714rem 0.2857rem 2.1429rem; border-radius: 0.3571rem; cursor: pointer; color: var(--text-muted); font-size: 0.8214rem; transition: all var(--t); }
@@ -102,7 +153,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .sb-tag:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .sb-tag.active { background: var(--accent-dim); color: var(--accent); }
 
-/* ── CONTENT ── */
+/* ── CONTENT AREA ── */
 #content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 .content-bar { display: flex; align-items: center; padding: 0.7143rem 1.1429rem; gap: 0.5714rem; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg-base); }
@@ -123,7 +174,22 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .empty-state h3 { font-size: 1.0714rem; font-weight: 600; color: var(--text-secondary); }
 .empty-state p { font-size: 0.8571rem; max-width: 20rem; line-height: 1.65; }
 
-.prompt-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9286rem; cursor: pointer; transition: border-color var(--t), background var(--t), transform var(--t), box-shadow var(--t); display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden; }
+/* ── PROMPT CARD (grid view) ── */
+.prompt-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.9286rem;
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t), transform var(--t), box-shadow var(--t);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  min-height: 300px;   /* ← all cards at least 300px tall */
+}
 .prompt-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 0.1429rem; background: transparent; transition: background var(--t); }
 .prompt-card:hover { border-color: var(--border-light); background: var(--bg-elevated); transform: translateY(-0.0714rem); box-shadow: 0 0.4286rem 1.7143rem rgba(0,0,0,0.35); }
 .prompt-card:hover::after { background: var(--accent); }
@@ -137,11 +203,29 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .fav-btn.on { color: #f06b6b; }
 
 .card-cat { font-size: 0.75rem; color: var(--text-muted); }
-.card-body { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; background: var(--bg-base); padding: 0.5rem 0.6429rem; border-radius: 0.4286rem; border: 1px solid var(--border); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 3; }
+
+/* Clamped body text */
+.card-body {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background: var(--bg-base);
+  padding: 0.5rem 0.6429rem;
+  border-radius: 0.4286rem;
+  border: 1px solid var(--border);
+  max-height: 3.4rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+}
+
 .card-tags { display: flex; flex-wrap: wrap; gap: 0.2143rem; }
 .tag-pill { font-size: 0.7143rem; padding: 0.1071rem 0.4286rem; border-radius: 0.2857rem; background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); font-weight: 500; }
 
-.card-foot { display: flex; align-items: center; gap: 0.4286rem; }
+.card-foot { display: flex; align-items: center; gap: 0.4286rem; margin-top: auto; }
 .card-date { font-size: 0.6786rem; color: var(--text-muted); margin-left: auto; }
 .card-actions { display: flex; gap: 0.2143rem; }
 .ca-btn { flex: 1; height: 1.8571rem; background: var(--bg-base); border: 1px solid var(--border); border-radius: 0.3571rem; color: var(--text-muted); font-family: var(--font-ui); font-size: 0.75rem; cursor: pointer; transition: all var(--t); display: flex; align-items: center; justify-content: center; gap: 0.2143rem; font-weight: 500; }
@@ -149,7 +233,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .ca-btn.copy:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(232,160,69,0.4); }
 .ca-btn.del:hover { background: rgba(240,107,107,0.1); color: var(--red); border-color: rgba(240,107,107,0.4); }
 
-/* ── PREVIEW CONTAINERS (consistent for local + link) ── */
+/* ── PREVIEW THUMBNAILS (grid) ── */
 .card-thumb {
   width: 100%; aspect-ratio: 16/9;
   background: var(--bg-elevated);
@@ -158,14 +242,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   position: relative;
+  flex-shrink: 0;
 }
-.card-thumb img, .card-thumb video {
-  width: 100%; height: 100%; object-fit: cover;
-  display: block;
+.card-thumb img, .card-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-thumb .thumb-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
 }
-.card-thumb .thumb-icon { font-size: 1.7rem; opacity: 0.4; }
+.card-thumb .thumb-icon svg { width: 40%; height: 40%; opacity: 0.8; }
 
-/* Detail preview — same look, fixed height */
+/* ── DETAIL PREVIEW ── */
 .det-preview-wrap {
   width: 100%;
   background: var(--bg-base);
@@ -175,10 +261,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
   display: flex; align-items: center; justify-content: center;
   min-height: 6rem; max-height: 14rem;
 }
-.det-preview-wrap img, .det-preview-wrap video {
-  max-width: 100%; max-height: 14rem;
-  object-fit: contain; display: block;
-}
+.det-preview-wrap img, .det-preview-wrap video { max-width: 100%; max-height: 14rem; object-fit: contain; display: block; }
 .det-preview-wrap audio { width: 100%; }
 .det-preview-wrap .preview-placeholder {
   display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
@@ -214,47 +297,119 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .det-sec { display: flex; flex-direction: column; gap: 0.3rem; }
 .det-label { font-size: 0.6786rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08rem; color: var(--text-muted); }
 
-/* Prompt display: raw mono view */
-.det-prompt-raw { font-family: var(--font-mono); font-size: 0.8214rem; color: var(--text-secondary); background: var(--bg-base); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7857rem 0.8571rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 18.5714rem; overflow-y: auto; }
+.resizable-prompt {
+  resize: vertical;
+  overflow: auto;
+  min-height: 15rem;
+  height: 35vh;
+  max-height: 70vh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-base);
+  padding: 0.5rem 0.6rem;
+  position: relative;
+}
 
-/* Markdown-rendered body/notes */
-.det-prompt-md { background: var(--bg-base); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7857rem 0.8571rem; line-height: 1.65; max-height: 22rem; overflow-y: auto; }
-.det-notes-md { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 0.8571rem; line-height: 1.65; }
-.md-body { font-size: 0.8571rem; color: var(--text-secondary); }
-.md-body h1,.md-body h2,.md-body h3,.md-body h4 { color: var(--text-primary); font-weight: 600; margin: 0.65rem 0 0.35rem; }
-.md-body h1 { font-size: 1rem; }
-.md-body h2 { font-size: 0.9286rem; }
-.md-body h3,.md-body h4 { font-size: 0.8571rem; }
-.md-body p { margin-bottom: 0.5rem; }
-.md-body ul,.md-body ol { padding-left: 1.4rem; margin-bottom: 0.5rem; }
-.md-body li { margin-bottom: 0.15rem; }
-.md-body code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--bg-elevated); padding: 0.08rem 0.3rem; border-radius: 0.2rem; border: 1px solid var(--border); color: var(--accent); }
-.md-body pre { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem; overflow-x: auto; margin-bottom: 0.5rem; }
-.md-body pre code { background: none; border: none; padding: 0; color: var(--text-secondary); }
-.md-body blockquote { border-left: 2px solid var(--accent); padding-left: 0.75rem; color: var(--text-muted); margin: 0.4rem 0; font-style: italic; }
-.md-body strong { color: var(--text-primary); font-weight: 600; }
-.md-body em { font-style: italic; }
-.md-body a { color: var(--blue); text-decoration: none; }
-.md-body a:hover { text-decoration: underline; }
-.md-body table { border-collapse: collapse; width: 100%; margin-bottom: 0.5rem; font-size: 0.8rem; }
-.md-body th,.md-body td { border: 1px solid var(--border); padding: 0.3rem 0.5rem; }
-.md-body th { background: var(--bg-elevated); font-weight: 600; color: var(--text-primary); }
-.md-body hr { border: none; border-top: 1px solid var(--border); margin: 0.65rem 0; }
-.md-body > *:last-child { margin-bottom: 0; }
+.resizable-prompt .expand-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  transition: all var(--t);
+  z-index: 10;
+}
 
-/* ── SPLIT PROMPT ── */
+.resizable-prompt .expand-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.resizable-prompt .det-prompt-md {
+  max-height: none;
+  border: none;
+  margin: 0;
+  padding: 1.4rem 1.2rem;
+}
+
+/* ── FULL‑PAGE PROMPT OVERLAY ── */
+#fullpage-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-base);
+  z-index: 3000;
+  display: none;
+  flex-direction: column;
+}
+#fullpage-prompt-overlay.open {
+  display: flex;
+}
+
+.fullpage-prompt-inner {
+  flex: 1;
+  overflow: auto;
+  padding: 2rem 1.5rem;
+  position: relative;
+}
+
+.fullpage-prompt-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  z-index: 10;
+  transition: all var(--t);
+}
+.fullpage-prompt-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+#fullpage-prompt-content .resizable-prompt {
+  height: auto;
+  min-height: auto;
+  max-height: none;
+  resize: none;
+  border: none;
+  background: transparent;
+}
+#fullpage-prompt-content .resizable-prompt .expand-btn {
+  display: none;
+}
+#fullpage-prompt-content .det-prompt-md {
+  max-height: none;
+}
+
+/* ── SPLIT PROMPT STYLING ── */
 .split-badge { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06rem; padding: 0.15rem 0.45rem; border-radius: 0.25rem; }
 .split-badge.pos { background: rgba(62,207,115,0.13); color: var(--green); border: 1px solid rgba(62,207,115,0.25); }
 .split-badge.neg { background: rgba(240,107,107,0.12); color: var(--red); border: 1px solid rgba(240,107,107,0.25); }
-
 .type-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .type-toggle-btn { flex: 1; height: 2rem; background: transparent; border: none; cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); transition: all var(--t); padding: 0 0.75rem; }
 .type-toggle-btn.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
 .type-toggle-btn:hover:not(.active) { background: var(--bg-hover); color: var(--text-secondary); }
-
 .split-field-label { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
-
-/* ── VIEW TOGGLE BADGE (on cards) ── */
 .split-indicator { font-size: 0.6429rem; padding: 0.05rem 0.3rem; border-radius: 0.2rem; background: rgba(62,207,115,0.12); color: var(--green); border: 1px solid rgba(62,207,115,0.2); font-weight: 600; margin-left: 0.2rem; vertical-align: middle; }
 
 .det-link { display: flex; align-items: center; gap: 0.4286rem; padding: 0.5rem 0.7143rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--blue); font-size: 0.8214rem; transition: all var(--t); word-break: break-all; }
@@ -268,7 +423,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .version-item { padding: 0.5rem; border-bottom: 1px solid var(--border); cursor: pointer; }
 .version-item:hover { background: var(--bg-hover); }
 
-/* ── FOOTER BUTTONS ── */
 .det-foot { padding: 0.7143rem 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
 .det-foot .btn { flex: 0 1 auto; }
 
@@ -288,21 +442,23 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-base); color: 
 .dd-item.danger:hover { background: rgba(240,107,107,0.08); }
 .dd-divider { height: 1px; background: var(--border); margin: 0.2143rem 0; }
 
-/* ── MODAL ── */
+/* ── MODAL OVERLAY ── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadein 0.15s ease; }
 @keyframes fadein { from { opacity:0; } to { opacity:1; } }
 .modal { background: var(--bg-elevated); border: 1px solid var(--border-light); border-radius: var(--radius-lg); width: 44.2857rem; max-width: calc(100vw - 2.2857rem); max-height: calc(100vh - 4.2857rem); display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.18s ease; box-shadow: 0 2rem 4.5714rem rgba(0,0,0,0.65); }
 .modal.sm { width: 28.5714rem; }
 .modal.md { width: 34.2857rem; }
+.modal.maximized { width: 100vw; height: 100vh; max-width: none; max-height: none; border-radius: 0; }
 @keyframes slideUp { from { transform: translateY(1rem); opacity:0; } to { transform: translateY(0); opacity:1; } }
 .modal-head { padding: 1.2857rem 1.2857rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.7143rem; flex-shrink: 0; }
 .modal-title { font-size: 1.0714rem; font-weight: 700; color: var(--text-primary); }
-.modal-x { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.5rem; line-height: 1; padding: 0.0714rem; transition: color var(--t); }
+.modal-head-actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.modal-x { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.5rem; line-height: 1; padding: 0.0714rem; transition: color var(--t); }
 .modal-x:hover { color: var(--text-primary); }
 .modal-body { flex: 1; overflow-y: auto; padding: 1.2857rem; display: flex; flex-direction: column; gap: 1rem; }
 .modal-foot { padding: 0.8571rem 1.2857rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem; justify-content: flex-end; flex-shrink: 0; }
 
-/* ── FORM ── */
+/* ── FORM ELEMENTS ── */
 .form-group { display: flex; flex-direction: column; gap: 0.3571rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8571rem; }
 .form-label { font-size: 0.8214rem; font-weight: 600; color: var(--text-secondary); }
@@ -361,13 +517,15 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
 .stat-k { font-size: 0.6786rem; text-transform: uppercase; letter-spacing: 0.05rem; color: var(--text-muted); margin-bottom: 0.2857rem; }
 .stat-v { font-size: 1.5714rem; font-weight: 700; color: var(--accent); }
 
-#btn-hamburger { display: none; }
+/* ── MOBILE RESPONSIVENESS ── */
 @media (max-width: 850px) {
   :root { --sidebar-w: 15.5714rem; }
   #btn-hamburger { display: flex; }
   .logo-text { display: none; }
-  #sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 500; transform: translateX(-100%); box-shadow: 0 0 2rem rgba(0,0,0,0.3); }
+  #btn-pin-sidebar { display: none; }   /* ← add this line */
+  #sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 500; transform: translateX(-100%); }
   #sidebar.open { transform: translateX(0); }
+  #sidebar.unpinned:hover { width: var(--sidebar-w); }
   #detail { width: 100%; position: fixed; top: 0; right: 0; bottom: 0; z-index: 400; }
   #content { margin-left: 0; }
   .content-bar { padding: 0.5rem; }
@@ -375,12 +533,28 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
   .topbar-right .btn { padding: 0 0.5rem; }
   .search-wrap { max-width: 100%; }
 }
+
+@media (max-width: 650px) {
+  .prompts-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 0.5rem; }
+  .card-body { display: none; }   /* hide body on mobile grid for clean look */
+  .card-cat { font-size: 0.8rem; }
+  .card-title { font-size: 0.9rem; }
+  .card-date { font-size: 0.7rem; }
+  .li-preview { display: none; }
+  .list-item { padding: 0.5rem 0.7rem; }
+  .li-actions { gap: 0.1rem; }
+  .la-btn { padding: 0 0.4rem; font-size: 0.7rem; height: 1.6rem; }
+  .li-title { font-size: 0.85rem; }
+  .li-meta { font-size: 0.7rem; }
+}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="drop-zone">📂 Drop JSON backup to import<span>Release to restore your library</span></div>
+  <!-- Drag & drop overlay -->
+  <div id="drop-zone">📂 Drop backup to import<span>Release to restore your library</span></div>
 
+  <!-- ── TOP BAR ── -->
   <div id="topbar">
     <button class="btn-icon" id="btn-hamburger" title="Toggle sidebar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -400,6 +574,12 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     </div>
 
     <div class="topbar-right">
+      <button class="btn-icon" id="btn-pin-sidebar" title="Pin sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="17" x2="12" y2="22"></line>
+          <path d="M5 17h14v-1.76a2 2 0 0 0-1.12-1.8l-1.38-.68V6l1.38-.68A2 2 0 0 0 19 3.76V2H5v1.76a2 2 0 0 0 1.12 1.8l1.38.68V12.76l-1.38.68A2 2 0 0 0 5 15.24V17z"></path>
+        </svg>
+      </button>
       <button class="btn-icon" id="btn-theme" title="Toggle dark/light theme">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="theme-icon-dark">
           <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
@@ -423,6 +603,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     </div>
   </div>
 
+  <!-- Settings dropdown -->
   <div id="settings-dd" style="display:none">
     <button class="dd-item" data-action="manage-cats">Manage Categories</button>
     <button class="dd-item" data-action="manage-tags">Manage Tags</button>
@@ -431,13 +612,15 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     <button class="dd-item" data-action="storage">Storage Info</button>
     <button class="dd-item" data-action="shortcuts">Keyboard Shortcuts</button>
     <div class="dd-divider"></div>
-    <button class="dd-item" data-action="about">About GIA</button>
+    <button class="dd-item" data-action="about">About</button>
     <div class="dd-divider"></div>
     <button class="dd-item" data-action="fetch-previews">Refresh Link Previews</button>
     <button class="dd-item danger" data-action="clear">Clear All Data</button>
   </div>
 
+  <!-- ── MAIN LAYOUT ── -->
   <div id="main">
+    <!-- SIDEBAR -->
     <div id="sidebar">
       <div class="sb-section">
         <div class="sb-item" id="sb-fav" data-filter="fav">
@@ -458,11 +641,12 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
       </div>
       <div class="sb-divider"></div>
       <div class="sb-section">
-        <div class="sb-label">Tags</div>
+        <div class="sb-label" id="tags-toggle">Tags</div>
       </div>
       <div class="tags-cloud" id="tags-cloud"></div>
     </div>
 
+    <!-- CONTENT -->
     <div id="content">
       <div class="content-bar">
         <div class="content-info">
@@ -488,6 +672,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
       <div id="prompts-wrap"></div>
     </div>
 
+    <!-- DETAIL PANEL -->
     <div id="detail">
       <div class="det-head">
         <div>
@@ -501,6 +686,7 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     </div>
   </div>
 
+  <!-- STATUS BAR -->
   <div id="statusbar">
     <div class="stat-item">
       <div class="stat-dot" id="stat-dot"></div>
@@ -511,22 +697,31 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
       <span id="stat-count">0 prompts</span>
     </div>
     <div class="stat-item" style="margin-left:auto;">
-      <span id="stat-version"></span>
+      <a id="stat-version"
+        href="https://github.com/KungPowUnicorn/gia"
+        style="color:var(--text-muted); text-decoration:none; cursor:pointer;"
+      >GIA v1.1.0</a>
+    </div>
     </div>
   </div>
 
-</div><!-- #app -->
-
 <input type="file" id="file-input" accept=".json,.gia" style="display:none">
+
+<!-- Full‑page prompt overlay -->
+<div id="fullpage-prompt-overlay">
+  <div class="fullpage-prompt-inner">
+    <button class="fullpage-prompt-close" onclick="closeFullpagePrompt()" title="Close full page">✕</button>
+    <div id="fullpage-prompt-content"></div>
+  </div>
+</div>
 
 <!-- marked.js for markdown rendering -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script>
-/* ═══════════════════════════════════════════════════
-   GIA – WITH INTELLIGENT TAGS & AUTOCOMPLETE
-   ═══════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════
+   GIA – FULL APPLICATION LOGIC
+   ════════════════════════════════════════════════════════════════════════ */
 
-// Configure marked
 if (typeof marked !== 'undefined') {
   marked.setOptions({ breaks: true, gfm: true });
 }
@@ -540,29 +735,44 @@ function renderMarkdown(text) {
   return '<div class="md-body" style="white-space:pre-wrap">' + esc(text) + '</div>';
 }
 
-const DB_NAME = 'GIA_v1';
+/* ═══════════════════════════════════════════════════
+   DATABASE & STATE
+   ═══════════════════════════════════════════════════ */
+const DB_NAME = 'GIA';
 const DB_VER = 1;
 const S_PROMPTS = 'prompts';
 const S_SETTINGS = 'settings';
 const S_CATS = 'categories';
 const XOR_KEY = 'GIA_UNICORN_2024_OFFLINE_KEY';
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1.0';
 
 const DEFAULT_CATS = [
-  { id:'text',   name:'Text',   color:'#5ba3f5', subs:['Writing','Coding','Summaries','Storytelling','Analysis'] },
-  { id:'images', name:'Images', color:'#a78bfa', subs:['Portraits','Concept Art','Logos','Product Renders','Anime'] },
-  { id:'audio',  name:'Audio',  color:'#3ecf73', subs:['Voice','Music','Sound Design'] },
-  { id:'video',  name:'Video',  color:'#f06b6b', subs:['Cinematic','Storyboards','Reels','Animation'] },
-  { id:'other',  name:'Other',  color:'#f5c842', subs:['Workflows','Automation','Experiments','System Prompts'] },
+  { id:'text',   name:'Text',   iconKey:'text',   color:'#5ba3f5', subs:['Writing','Coding','Summaries','Storytelling','Analysis'] },
+  { id:'images', name:'Images', iconKey:'images', color:'#a78bfa', subs:['Portraits','Concept Art','Logos','Product Renders','Anime'] },
+  { id:'audio',  name:'Audio',  iconKey:'audio',  color:'#3ecf73', subs:['Voice','Music','Sound Design'] },
+  { id:'video',  name:'Video',  iconKey:'video',  color:'#f06b6b', subs:['Cinematic','Storyboards','Reels','Animation'] },
+  { id:'other',  name:'Other',  iconKey:'other',  color:'#f5c842', subs:['Workflows','Automation','Experiments','System Prompts'] },
 ];
 
-const CAT_ICONS = {
+const ICON_SET = {
   text: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>`,
   images: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
   audio: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   video: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`,
   other: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  rocket: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
+  bulb: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>`,
+  magic: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2m0 14v-2m4-5h2M3 11h2m13.07-6.93l-1.41 1.41M6.34 17.66l-1.41 1.41M12 18l7-7L5 5l7 13z"/></svg>`,
+  code: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  heart: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
 };
+
+function getCatIcon(cat) {
+  if (!cat) return ICON_SET.other;
+  if (cat.iconKey && ICON_SET[cat.iconKey]) return ICON_SET[cat.iconKey];
+  if (cat.id && ICON_SET[cat.id]) return ICON_SET[cat.id];
+  return ICON_SET.other;
+}
 
 const uid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
   const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
@@ -630,6 +840,41 @@ function toast(msg, dur = 2600) {
   toastTimer = setTimeout(() => { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),310); }, dur);
 }
 
+function toggleFullpagePrompt(el) {
+  const overlay = document.getElementById('fullpage-prompt-overlay');
+  const content = document.getElementById('fullpage-prompt-content');
+
+  if (overlay.classList.contains('open')) {
+    // Move back
+    const returnParent = overlay._returnParent;
+    if (returnParent && el.parentElement === content) {
+      returnParent.appendChild(el);
+    }
+    overlay.classList.remove('open');
+    overlay._returnParent = null;
+    overlay._promptEl = null;
+  } else {
+    // Store parent and move
+    overlay._returnParent = el.parentElement;
+    overlay._promptEl = el;
+    content.appendChild(el);
+    overlay.classList.add('open');
+  }
+}
+
+function closeFullpagePrompt() {
+  const overlay = document.getElementById('fullpage-prompt-overlay');
+  if (!overlay.classList.contains('open')) return;
+  const promptEl = overlay._promptEl;
+  const returnParent = overlay._returnParent;
+  if (promptEl && returnParent) {
+    returnParent.appendChild(promptEl);
+  }
+  overlay.classList.remove('open');
+  overlay._returnParent = null;
+  overlay._promptEl = null;
+}
+
 class GDB {
   constructor() { this.db = null; }
   init() {
@@ -662,6 +907,7 @@ class GDB {
 }
 
 const db = new GDB();
+
 const S = {
   prompts: [],
   customCats: [],
@@ -726,19 +972,12 @@ function catCounts() {
   return m;
 }
 
-function getCatIcon(catId) {
-  return CAT_ICONS[catId] || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
-}
-
 /* ═══════════════════════════════════════════════════
-   THUMBNAIL — local files only
-   External link images use direct <img> tags instead
+   THUMBNAIL GENERATION
    ═══════════════════════════════════════════════════ */
 function generateThumbnail(fileObj, maxW = 200) {
   return new Promise((resolve, reject) => {
-    const type = fileObj.type.split('/')[0];   // 'image', 'video', 'audio'
-
-    // ── Image ──────────────────────────────────────
+    const type = fileObj.type.split('/')[0];
     if (type === 'image') {
     const img = new Image();
     img.onload = () => {
@@ -751,103 +990,66 @@ function generateThumbnail(fileObj, maxW = 200) {
         URL.revokeObjectURL(img.src);
       resolve(canvas.toDataURL('image/jpeg', 0.75));
     };
-      img.onerror = () => {
-        URL.revokeObjectURL(img.src);
-        reject(new Error('Image load error'));
-      };
+      img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load error')); };
       img.src = URL.createObjectURL(fileObj);
-    }
-
-    // ── Video ──────────────────────────────────────
-    else if (type === 'video') {
+    } else if (type === 'video') {
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.muted = true;
       video.playsInline = true;
       video.src = URL.createObjectURL(fileObj);
-
-      video.onloadeddata = () => {
-        // Seek to 1 second (or 10% of duration if shorter)
-        video.currentTime = Math.min(1, video.duration * 0.1);
-      };
-
+      video.onloadeddata = () => { video.currentTime = Math.min(1, video.duration * 0.1); };
       video.onseeked = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = 320;   // fixed thumbnail size for videos
-        canvas.height = 180;
+        canvas.width = 320; canvas.height = 180;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(video.src);
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
-
-      video.onerror = () => {
-        URL.revokeObjectURL(video.src);
-        reject(new Error('Video loading failed'));
-      };
-    }
-
-    // ── Audio (or other) ───────────────────────────
-    else {
-      resolve(null);   // no preview thumbnail for audio
+      video.onerror = () => { URL.revokeObjectURL(video.src); reject(new Error('Video loading failed')); };
+    } else {
+      resolve(null);
     }
   });
 }
 
 /* ═══════════════════════════════════════════════════
-   PREVIEW HTML (cards)
-   Fix: removed crossOrigin canvas for external URLs.
-   Direct <img> with onerror hides broken images cleanly.
+   PREVIEW HTML
    ═══════════════════════════════════════════════════ */
 const IMG_EXT = /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?.*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg)(\?.*)?$/i;
 
-function getPreviewHTML(p) {
-  // Locally-stored base64 thumbnail
+function getPreviewHTML(p, cat) {
   if (p.previewData && p.previewData.startsWith('data:image')) {
     return `<div class="card-thumb"><img src="${p.previewData}" loading="lazy" alt=""></div>`;
   }
-  // External link — display directly, hide on error
   if (p.link) {
     if (IMG_EXT.test(p.link)) {
-      return `<div class="card-thumb">
-        <img src="${esc(p.link)}" loading="lazy" referrerpolicy="no-referrer" alt=""
-          onerror="this.closest('.card-thumb').style.display='none'">
-      </div>`;
+      return `<div class="card-thumb"><img src="${esc(p.link)}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.closest('.card-thumb').style.display='none'"></div>`;
     }
     if (VIDEO_EXT.test(p.link)) {
-      return `<div class="card-thumb">
-        <video muted preload="metadata"><source src="${esc(p.link)}"></video>
-        <div class="thumb-icon" style="position:absolute">▶</div>
-      </div>`;
+      return `<div class="card-thumb"><video muted preload="metadata"><source src="${esc(p.link)}"></video><div class="thumb-icon" style="position:absolute">▶</div></div>`;
     }
-    return `<div class="card-thumb"><div class="thumb-icon">🔗</div></div>`;
   }
-  return '';
-}
+  const color = cat?.color || 'var(--text-muted)';
+  const icon = getCatIcon(cat);
+  return `<div class="card-thumb" style="background:${color}22; border-color:${color}55;">
+    <div class="thumb-icon" style="color:${color}">${icon}</div>
+  </div>`;
+  }
 
-/* ═══════════════════════════════════════════════════
-   DETAIL PREVIEW
-   ═══════════════════════════════════════════════════ */
 function renderDetailPreview(p) {
   const cont = document.getElementById('det-preview-cont');
   if (!cont) return;
-
   if (p.previewData && p.previewData.startsWith('data:image')) {
     cont.innerHTML = `<div class="det-preview-wrap"><img src="${p.previewData}" alt="Preview"></div>`;
   } else if (p.link) {
     if (IMG_EXT.test(p.link)) {
-      cont.innerHTML = `<div class="det-preview-wrap">
-        <img src="${esc(p.link)}" referrerpolicy="no-referrer" alt="Preview"
-          onerror="this.closest('.det-preview-wrap').innerHTML='<div class=\\'preview-placeholder\\'><span>🖼️</span>Image could not load</div>'">
-      </div>`;
+      cont.innerHTML = `<div class="det-preview-wrap"><img src="${esc(p.link)}" referrerpolicy="no-referrer" alt="Preview" onerror="this.closest('.det-preview-wrap').innerHTML='<div class=\\'preview-placeholder\\'><span>🖼️</span>Image could not load</div>'"></div>`;
     } else if (VIDEO_EXT.test(p.link)) {
-      cont.innerHTML = `<div class="det-preview-wrap">
-        <video controls style="max-width:100%;max-height:14rem"><source src="${esc(p.link)}"></video>
-      </div>`;
-    } else if (p.link) {
-      cont.innerHTML = `<div class="det-preview-wrap">
-        <div class="preview-placeholder"><span>🔗</span><a href="${esc(p.link)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.8rem">Open link</a></div>
-      </div>`;
+      cont.innerHTML = `<div class="det-preview-wrap"><video controls style="max-width:100%;max-height:14rem"><source src="${esc(p.link)}"></video></div>`;
+    } else {
+      cont.innerHTML = `<div class="det-preview-wrap"><div class="preview-placeholder"><span>🔗</span><a href="${esc(p.link)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.8rem">Open link</a></div></div>`;
     }
   } else {
     cont.innerHTML = '';
@@ -855,26 +1057,7 @@ function renderDetailPreview(p) {
 }
 
 /* ═══════════════════════════════════════════════════
-   FETCH LINK PREVIEWS
-   No longer tries canvas (CORS fails silently and
-   poisons the browser cache). Direct img display is
-   already handled by getPreviewHTML/renderDetailPreview.
-   ═══════════════════════════════════════════════════ */
-async function fetchLinkPreviews(showToast = true) {
-  // Local file previews only — external links display directly
-  const missing = S.prompts.filter(p => p.link && !p.previewData && IMG_EXT.test(p.link));
-  if (missing.length === 0) {
-    if (showToast) toast('Link images display directly — no caching needed');
-    return;
-  }
-  // Refresh the content to ensure direct img tags are shown
-  renderContent();
-  if (S.selectedId) renderDetail(S.selectedId);
-  if (showToast) toast(`✓ Showing ${missing.length} link image${missing.length!==1?'s':''} directly`);
-}
-
-/* ═══════════════════════════════════════════════════
-   SIDEBAR RENDER
+   SIDEBAR RENDERING
    ═══════════════════════════════════════════════════ */
 let catToggleListenerAdded = false;
 function renderSidebar() {
@@ -892,17 +1075,15 @@ function renderSidebar() {
   catEl.innerHTML = cats.map(cat => {
     const count = counts[cat.name] || 0;
     const isActive = S.filter.type==='cat' && S.filter.val===cat.name;
-    const subs = cat.subs || [];
-    const hasSubActive = S.filter.type==='sub' && S.filter.val?.startsWith(cat.name+'::');
+    const hasSubActive = S.filter.type==='sub' && S.filter.val?.startsWith(cat.name+'::') || isActive;
     return `<div>
       <div class="cat-header${isActive?' active':''}" data-cat="${esc(cat.name)}" data-id="${esc(cat.id)}">
-        <span class="cat-arrow${(hasSubActive)?' open':''}">▶</span>
-        <span style="font-size:1.1429rem">${getCatIcon(cat.id)}</span>
+        <span style="font-size:1.1429rem">${getCatIcon(cat)}</span>
         <span>${esc(cat.name)}</span>
         <span class="sb-count">${count}</span>
       </div>
-      ${subs.length?`<div class="cat-subs${hasSubActive?' open':''}" id="subs-${esc(cat.id)}">
-        ${subs.map(sub=>{
+      ${cat.subs?.length ? `<div class="cat-subs${hasSubActive?' open':''}" id="subs-${esc(cat.id)}">
+        ${cat.subs.map(sub=>{
           const isSubActive=S.filter.type==='sub'&&S.filter.val===`${cat.name}::${sub}`;
           const sc=S.prompts.filter(p=>p.category===cat.name&&p.subcategory===sub).length;
           return `<div class="sub-item${isSubActive?' active':''}" data-cat="${esc(cat.name)}" data-sub="${esc(sub)}"><span style="color:var(--text-muted);font-size:0.7143rem">└</span>${esc(sub)}${sc?`<span style="margin-left:auto;font-size:0.6786rem;color:var(--text-muted)">${sc}</span>`:''}</div>`;
@@ -917,18 +1098,30 @@ function renderSidebar() {
     return `<span class="sb-tag${active?' active':''}" data-tag="${esc(tag)}">#${esc(tag)}<span style="opacity:.5;margin-left:0.2143rem;font-size:0.6786rem">${count}</span></span>`;
   }).join('');
 
+  // Category header
   catEl.querySelectorAll('.cat-header').forEach(el=>{
     el.addEventListener('click',()=>{
+      const subsEl = document.getElementById('subs-'+el.dataset.id);
+      if (subsEl) {
+        subsEl.classList.toggle('open');
+      }
+      // Set the filter to this category (shows prompts in the category)
       setFilter('cat', el.dataset.cat);
-      const subsEl=document.getElementById(`subs-${el.dataset.id}`);
-      if(subsEl){ const open=subsEl.classList.toggle('open'); el.querySelector('.cat-arrow').classList.toggle('open',open); }
+      // Do NOT close the sidebar on mobile – let user see subs
     });
   });
   catEl.querySelectorAll('.sub-item').forEach(el=>{
-    el.addEventListener('click',e=>{ e.stopPropagation(); setFilter('sub',`${el.dataset.cat}::${el.dataset.sub}`); });
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      setFilter('sub',`${el.dataset.cat}::${el.dataset.sub}`);
+      if (window.innerWidth <= 850) document.getElementById('sidebar').classList.remove('open');
+    });
   });
   document.getElementById('tags-cloud').querySelectorAll('.sb-tag').forEach(el=>{
-    el.addEventListener('click',()=>setFilter('tag',el.dataset.tag));
+    el.addEventListener('click',()=>{
+      setFilter('tag',el.dataset.tag);
+      if (window.innerWidth <= 850) document.getElementById('sidebar').classList.remove('open');
+    });
   });
 
   if (!catToggleListenerAdded) {
@@ -936,8 +1129,8 @@ function renderSidebar() {
       const allSubs = document.querySelectorAll('.cat-subs');
       const anyOpen = Array.from(allSubs).some(el => el.classList.contains('open'));
       allSubs.forEach(el => {
-        if (anyOpen) { el.classList.remove('open'); const arrow = el.previousElementSibling?.querySelector('.cat-arrow'); if (arrow) arrow.classList.remove('open'); }
-        else { el.classList.add('open'); const arrow = el.previousElementSibling?.querySelector('.cat-arrow'); if (arrow) arrow.classList.add('open'); }
+        if (anyOpen) el.classList.remove('open');
+        else el.classList.add('open');
       });
     });
     catToggleListenerAdded = true;
@@ -945,7 +1138,7 @@ function renderSidebar() {
 }
 
 /* ═══════════════════════════════════════════════════
-   RENDER – CONTENT
+   CONTENT RENDERING
    ═══════════════════════════════════════════════════ */
 function renderContent() {
   const fps = filteredPrompts();
@@ -996,7 +1189,7 @@ function cardHTML(p){
   const cat=allCats().find(c=>c.name===p.category);
   const q=S.filter.search;
   const isSplit = p.bodyType === 'split';
-  const preview = getPreviewHTML(p);
+  const preview = getPreviewHTML(p, cat);
   return `<div class="prompt-card" data-card="${p.id}">
     ${preview}
     <div class="card-top">
@@ -1004,7 +1197,7 @@ function cardHTML(p){
       <button class="fav-btn${p.fav?' on':''}" data-id="${p.id}" title="${p.fav?'Unfavorite':'Favorite'}">${p.fav?'♥':'♡'}</button>
     </div>
     <div class="card-cat" style="color:${cat?.color||'var(--text-muted)'}">
-      ${cat?getCatIcon(cat.id)+' ':''}<span>${esc(p.category||'')}</span>${p.subcategory?` <span style="color:var(--text-muted)">›</span> ${esc(p.subcategory)}`:''}
+      ${cat?getCatIcon(cat)+' ':''}<span>${esc(p.category||'')}</span>${p.subcategory?` <span style="color:var(--text-muted)">›</span> ${esc(p.subcategory)}`:''}
     </div>
     <div class="card-body">${isSplit?'<span style="opacity:.5;font-size:.65rem">＋ </span>':''}${highlight(p.body||'',q)}</div>
     ${p.tags?.length?`<div class="card-tags">${p.tags.slice(0,4).map(t=>`<span class="tag-pill">#${esc(t)}</span>`).join('')}</div>`:''}
@@ -1026,7 +1219,7 @@ function listItemHTML(p){
     <div class="li-main">
       <div class="li-title">${highlight(p.title||'Untitled',q)}${isSplit?'<span class="split-indicator">±</span>':''}</div>
       <div class="li-meta" style="color:${cat?.color||'var(--text-muted)'}">
-        ${cat?getCatIcon(cat.id)+' ':''}<span>${esc(p.category||'')}</span>${p.subcategory?` › ${esc(p.subcategory)}`:''} · ${timeAgo(p.updatedAt||p.createdAt)}
+        ${cat?getCatIcon(cat)+' ':''}<span>${esc(p.category||'')}</span>${p.subcategory?` › ${esc(p.subcategory)}`:''} · ${timeAgo(p.updatedAt||p.createdAt)}
       </div>
     </div>
     <div class="li-preview">${esc((p.body||'').substring(0,120))}</div>
@@ -1039,7 +1232,7 @@ function listItemHTML(p){
 }
 
 /* ═══════════════════════════════════════════════════
-   RENDER – DETAIL
+   DETAIL PANEL
    ═══════════════════════════════════════════════════ */
 function renderDetail(id) {
   const p = S.prompts.find(x=>x.id===id);
@@ -1048,9 +1241,8 @@ function renderDetail(id) {
   const isSplit = p.bodyType === 'split';
 
   document.getElementById('det-title').textContent = p.title||'Untitled';
-  document.getElementById('det-sub').textContent = `${cat?getCatIcon(cat.id).replace(/<[^>]*>/g,'')+' ':''}${p.category||''}${p.subcategory?' › '+p.subcategory:''}`;
+  document.getElementById('det-sub').textContent = `${p.category||''}${p.subcategory?' › '+p.subcategory:''}`;
 
-  // Build prompt body section
   let promptSection = '';
   if (isSplit) {
     promptSection = `
@@ -1059,22 +1251,40 @@ function renderDetail(id) {
           Prompt
           <span class="split-badge pos">＋ Positive</span>
         </div>
+        <div class="resizable-prompt">
+          <button class="expand-btn" onclick="toggleFullpagePrompt(this.parentElement)" title="Full page">⛶</button>
         <div class="det-prompt-md">${renderMarkdown(p.body||'')}</div>
+        </div>
         <div style="margin-top:.5rem"></div>
         <div class="det-label"><span class="split-badge neg">− Negative</span></div>
+        <div class="resizable-prompt">
+          <button class="expand-btn" onclick="toggleFullpagePrompt(this.parentElement)" title="Full page">⛶</button>
         <div class="det-prompt-md" style="border-color:rgba(240,107,107,0.2)">${renderMarkdown(p.bodyNegative||'<em style="opacity:.4">No negative prompt</em>')}</div>
+        </div>
       </div>`;
   } else {
     promptSection = `
       <div class="det-sec">
         <div class="det-label">Prompt</div>
+        <div class="resizable-prompt">
+            <button class="expand-btn" onclick="toggleFullpagePrompt(this.parentElement)" title="Full page">⛶</button>
         <div class="det-prompt-md">${renderMarkdown(p.body||'')}</div>
+        </div>
       </div>`;
   }
 
   document.getElementById('det-body').innerHTML = `
     <div id="det-preview-cont"></div>
-    ${promptSection}
+      <div class="det-meta-row">
+        <div class="meta-pill"><span>Created</span> ${fmtDate(p.createdAt)}</div>
+        <div class="meta-pill"><span>Updated</span> ${fmtDate(p.updatedAt)}</div>
+        <div class="meta-pill"><span>Last used</span> ${p.lastUsed?fmtDate(p.lastUsed):'—'}</div>
+        <div class="meta-pill"><span>Model</span> ${esc(p.model||'—')}</div>
+        <div class="meta-pill"><span>Version</span> v${p.version||1}</div>
+        <div class="meta-pill"><span>Type</span> ${isSplit?'Pos/Neg':'Standard'}</div>
+        <div class="meta-pill"><span>Length</span> ${(p.body||'').length} chars</div>
+      </div>
+      ${p.tags?.length ? `<div class="det-sec"><div class="det-label">Tags</div><div style="display:flex;flex-wrap:wrap;gap:0.2857rem">${p.tags.map(t=>`<span class="tag-pill" style="font-size:0.7857rem;padding:0.1429rem 0.5714rem">#${esc(t)}</span>`).join('')}</div></div>` : ''}
     ${p.notes ? `<div class="det-sec">
       <div class="det-label">Notes</div>
       <div class="det-notes-md">${renderMarkdown(p.notes)}</div>
@@ -1085,16 +1295,7 @@ function renderDetail(id) {
         ${esc(p.link.length>55?p.link.substring(0,55)+'…':p.link)}
       </a>
     </div>` : ''}
-    ${p.tags?.length ? `<div class="det-sec"><div class="det-label">Tags</div><div style="display:flex;flex-wrap:wrap;gap:0.2857rem">${p.tags.map(t=>`<span class="tag-pill" style="font-size:0.7857rem;padding:0.1429rem 0.5714rem">#${esc(t)}</span>`).join('')}</div></div>` : ''}
-    <div class="det-meta-row">
-      <div class="meta-pill"><span>Created</span> ${fmtDate(p.createdAt)}</div>
-      <div class="meta-pill"><span>Updated</span> ${fmtDate(p.updatedAt)}</div>
-      <div class="meta-pill"><span>Last used</span> ${p.lastUsed?fmtDate(p.lastUsed):'—'}</div>
-      <div class="meta-pill"><span>Model</span> ${esc(p.model||'—')}</div>
-      <div class="meta-pill"><span>Version</span> v${p.version||1}</div>
-      <div class="meta-pill"><span>Type</span> ${isSplit?'Pos/Neg':'Standard'}</div>
-      <div class="meta-pill"><span>Length</span> ${(p.body||'').length} chars</div>
-    </div>
+      ${promptSection}
   `;
 
   document.getElementById('det-foot').innerHTML = `
@@ -1131,12 +1332,10 @@ function showVersionHistory(id) {
   </div></div>`;
   document.body.appendChild(ov);
 
-  // Close handlers
   ov.querySelector('.modal-x').onclick = () => ov.remove();
   ov.querySelector('#vh-close').onclick = () => ov.remove();
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 
-  // Clear history handler
   ov.querySelector('#vh-clear').onclick = async () => {
     if (!confirm('Permanently delete all version history for this prompt?')) return;
     p.history = [];
@@ -1146,7 +1345,6 @@ function showVersionHistory(id) {
     toast('✓ Version history cleared');
   };
 
-  // Revert handlers (unchanged)
   ov.querySelectorAll('.version-item').forEach(item => {
     item.addEventListener('click', async () => {
       if (!confirm('Revert to this version? This will create a new version with the old content.')) return;
@@ -1168,7 +1366,7 @@ function showVersionHistory(id) {
 }
 
 /* ═══════════════════════════════════════════════════
-   THEME / FONT / VIEW
+   THEME / FONT / SIDEBAR PIN
    ═══════════════════════════════════════════════════ */
 function applyTheme(t) {
   document.documentElement.className = t; S.theme = t; db.setSetting('theme', t);
@@ -1190,11 +1388,42 @@ function applyFontSettings() {
   document.documentElement.style.fontSize = S.fontSize;
 }
 
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-document.getElementById('sidebar').addEventListener('click', (e) => {
-  if (e.target.closest('.sb-item,.cat-header,.sub-item,.sb-tag')) {
-    if (window.innerWidth <= 850) document.getElementById('sidebar').classList.remove('open');
+// Pin logic using the topbar button
+let sidebarPinned = true;
+function applyPinState() {
+  const sidebar = document.getElementById('sidebar');
+  const pinBtn = document.getElementById('btn-pin-sidebar');
+  const isMobile = window.innerWidth <= 850;
+
+  // On mobile, always act as if pinned (ignore stored preference)
+  const effectivePinned = isMobile ? true : sidebarPinned;
+
+  if (effectivePinned) {
+    sidebar.classList.remove('unpinned');
+    pinBtn.classList.add('pinned');
+  } else {
+    sidebar.classList.add('unpinned');
+    pinBtn.classList.remove('pinned');
   }
+}
+async function initPin() {
+  sidebarPinned = await db.getSetting('sidebarPinned');
+  if (sidebarPinned === null) sidebarPinned = true;
+  applyPinState();
+  document.getElementById('btn-pin-sidebar').addEventListener('click', () => {
+    sidebarPinned = !sidebarPinned;
+    applyPinState();
+  });
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+// Close sidebar on mobile when clicking outside (not on cat-header)
+document.addEventListener('click', function(e) {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar.classList.contains('open')) return;
+  if (e.target.closest('#sidebar') || e.target.closest('#btn-hamburger')) return;
+  sidebar.classList.remove('open');
 });
 
 /* ═══════════════════════════════════════════════════
@@ -1214,7 +1443,7 @@ async function copyNegative(id) { const p = S.prompts.find(x=>x.id===id); if(!p)
 async function deletePrompt(id) { if(!confirm('Delete this prompt? This is permanent.')) return; await db.deletePrompt(id); S.prompts = S.prompts.filter(p=>p.id!==id); if(S.selectedId===id) closeDetail(); renderSidebar(); renderContent(); toast('Prompt deleted'); }
 
 /* ═══════════════════════════════════════════════════
-   MODAL – PROMPT FORM
+   PROMPT MODAL
    ═══════════════════════════════════════════════════ */
 window.openAdd = function() { promptModal(null); };
 window.openEdit = function(id) { promptModal(S.prompts.find(p=>p.id===id)); };
@@ -1229,7 +1458,13 @@ function promptModal(prompt) {
   const ov = document.createElement('div'); ov.className = 'overlay';
   ov.innerHTML = `
 <div class="modal">
-  <div class="modal-head"><div class="modal-title">${isEdit?'Edit Prompt':'New Prompt'}</div><button class="modal-x">×</button></div>
+  <div class="modal-head">
+    <div class="modal-title">${isEdit?'Edit Prompt':'New Prompt'}</div>
+    <div class="modal-head-actions">
+      <button class="btn-icon" id="modal-maximize" title="Maximize / Restore">⛶</button>
+      <button class="modal-x">×</button>
+    </div>
+  </div>
   <div class="modal-body">
     <div class="form-group">
       <label class="form-label">Title <span class="req">*</span></label>
@@ -1239,7 +1474,7 @@ function promptModal(prompt) {
       <div class="form-group"><label class="form-label">Category <span class="req">*</span></label>
         <select class="form-select" id="f-cat"><option value="">Select category…</option>${cats.map(c=>`<option value="${esc(c.name)}"${prompt?.category===c.name?' selected':''}>${esc(c.name)}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">Subcategory</label>
+      <div class="form-group"><label class="form-label">Subcategory <span class="req" id="sub-req" style="display:none">*</span></label>
         <select class="form-select" id="f-sub"><option value="">None</option>${prompt?.category?(cats.find(c=>c.name===prompt.category)?.subs||[]).map(s=>`<option value="${esc(s)}"${prompt?.subcategory===s?' selected':''}>${esc(s)}</option>`).join(''):''}</select>
       </div>
     </div>
@@ -1319,9 +1554,6 @@ function promptModal(prompt) {
   acWrap.className = 'autocomplete-wrap';
   const acList = document.createElement('div');
   acList.className = 'autocomplete-list';
-  // Anchor acWrap in the DOM FIRST, then move wrap into it.
-  // Moving wrap first makes wrap.parentNode === acWrap, so the
-  // subsequent insertBefore would throw a HierarchyRequestError.
   wrap.parentNode.insertBefore(acWrap, wrap);
   acWrap.appendChild(wrap);
   acWrap.appendChild(acList);
@@ -1370,7 +1602,6 @@ function promptModal(prompt) {
         e.preventDefault();
         addTag(active.textContent.replace(/^#/, '').trim());
       } else {
-        // normal behaviour
         if (e.key === ',' || e.key === 'Enter') {
           e.preventDefault();
           const t = inp.value.trim().replace(/^#/, '').toLowerCase().replace(/\s+/g, '-');
@@ -1388,12 +1619,23 @@ function promptModal(prompt) {
   });
 
   // Category change → update subs
-  ov.querySelector('#f-cat').addEventListener('change', e=>{
+  const fcat = ov.querySelector('#f-cat'), fsub = ov.querySelector('#f-sub'), subReq = ov.querySelector('#sub-req');
+  fcat.addEventListener('change', e=>{
     const cat=allCats().find(c=>c.name===e.target.value);
-    const sub=ov.querySelector('#f-sub'); sub.innerHTML=`<option value="">None</option>${(cat?.subs||[]).map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}`;
+    fsub.innerHTML=`<option value="">None</option>${(cat?.subs||[]).map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}`;
+    // if cat has subs, show subcategory as required
+    if (cat?.subs?.length) {
+      subReq.style.display = '';
+    } else {
+      subReq.style.display = 'none';
+    }
   });
+  // trigger on load
+  fcat.dispatchEvent(new Event('change'));
+    if (prompt?.subcategory) {
+    fsub.value = prompt.subcategory;
+  }
 
-  // Prompt type toggle
   ov.querySelector('#ptype-standard').addEventListener('click', () => {
     promptBodyType = 'standard';
     ov.querySelector('#ptype-standard').classList.add('active');
@@ -1415,15 +1657,47 @@ function promptModal(prompt) {
 
   ov.querySelector('#f-preview-file').addEventListener('change', e => { previewFile = e.target.files[0] || null; });
 
-  const close=()=>ov.remove();
+  const close = ()=>{
+    document.removeEventListener('keydown', ctrlSHandler);
+    ov.remove();
+  };
+  const saveBtn = ov.querySelector('#m-save');
+
+  function ctrlSHandler(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      saveBtn.click();
+    }
+  }
+  document.addEventListener('keydown', ctrlSHandler);
+
   ov.querySelector('.modal-x').onclick=close; ov.querySelector('#m-cancel').onclick=close;
   ov.addEventListener('click',e=>{if(e.target===ov)close();});
 
-  ov.querySelector('#m-save').addEventListener('click', async ()=>{
+  let maximized = false;
+  ov.querySelector('#modal-maximize').addEventListener('click', () => {
+    maximized = !maximized;
+    const modal = ov.querySelector('.modal');
+    if (maximized) {
+      modal.classList.add('maximized');
+    } else {
+      modal.classList.remove('maximized');
+    }
+  });
+
+  saveBtn.addEventListener('click', async ()=>{
     const title=ov.querySelector('#f-title').value.trim();
     const cat=ov.querySelector('#f-cat').value;
+    const sub = ov.querySelector('#f-sub').value;
     if(!title){ov.querySelector('#f-title').focus();toast('⚠ Title is required');return;}
     if(!cat){ov.querySelector('#f-cat').focus();toast('⚠ Category is required');return;}
+    // subcategory required if parent has subs
+    const catObj = allCats().find(c=>c.name===cat);
+    if (catObj?.subs?.length && !sub) {
+      ov.querySelector('#f-sub').focus();
+      toast('⚠ Subcategory is required for this category');
+      return;
+    }
 
     let body = '', bodyNegative = '';
     if (promptBodyType === 'split') {
@@ -1456,7 +1730,7 @@ function promptModal(prompt) {
       id: prompt?.id || uid(),
       title,
       category: cat,
-      subcategory: ov.querySelector('#f-sub').value || '',
+      subcategory: sub,
       bodyType: promptBodyType,
       body,
       bodyNegative: bodyNegative || '',
@@ -1486,93 +1760,23 @@ function promptModal(prompt) {
 /* ═══════════════════════════════════════════════════
    MANAGE CATEGORIES MODAL
    ═══════════════════════════════════════════════════ */
-async function showManageCatsModal() {
-  const cats = allCats();
+function showFontsModal() {
   const ov = document.createElement('div'); ov.className = 'overlay';
-  ov.innerHTML = `<div class="modal md"><div class="modal-head"><div class="modal-title">Manage Categories</div><button class="modal-x">×</button></div>
-  <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-    <div style="font-size:0.8214rem;color:var(--text-muted);margin-bottom:0.8571rem">Edit category names or subcategories. Changes saved automatically.</div>
-    <div id="mc-cat-list">${cats.map(c => `
-      <div class="cat-editor" data-id="${esc(c.id)}" style="border:1px solid var(--border);border-radius:var(--radius);padding:0.8571rem;margin-bottom:0.5714rem;background:var(--bg-base)">
-        <div style="display:flex;align-items:center;gap:0.5714rem;margin-bottom:0.4286rem;">
-          <div style="font-size:1.1429rem">${getCatIcon(c.id)}</div>
-          <input class="form-input cat-name-input" value="${esc(c.name)}" style="flex:1" placeholder="Category name">
+  ov.innerHTML = `<div class="modal sm"><div class="modal-head"><div class="modal-title">Fonts</div><button class="modal-x">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">UI Font</label><select class="form-select" id="ap-ui-font">${['Outfit','Inter','Roboto','Open Sans','system-ui','Georgia, serif'].map(f=>`<option value="${f}"${S.uiFont===f?' selected':''}>${f}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Mono Font</label><select class="form-select" id="ap-mono-font">${['JetBrains Mono','Fira Code','Source Code Pro','Inconsolata','monospace'].map(f=>`<option value="${f}"${S.monoFont===f?' selected':''}>${f}</option>`).join('')}</select></div>
         </div>
-        <div class="subs-list" style="display:flex;flex-wrap:wrap;gap:0.4286rem;align-items:center;">
-          ${(c.subs||[]).map((sub,idx) => `<span style="display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;">${esc(sub)}<button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button></span>`).join('')}
-          <div style="display:flex;gap:0.2857rem;align-items:center;">
-            <input class="form-input new-sub-input" placeholder="New subcategory" style="width:9.2857rem;height:2rem;font-size:0.8571rem;">
-            <button class="btn btn-ghost add-sub-btn" style="height:2rem;font-size:0.7857rem;padding:0 0.5714rem;">Add</button>
-          </div>
-        </div>
-      </div>`).join('')}
-    </div>
-  </div>
-  <div class="modal-foot"><button class="btn btn-ghost" id="mc-close">Done</button></div></div>`;
-  document.body.appendChild(ov);
-
-  const origClose = () => ov.remove();
-
-  const saveChanges = async () => {
-    const editors = ov.querySelectorAll('.cat-editor');
-    const newCustomCats = [];
-    for (const editor of editors) {
-      const id = editor.dataset.id;
-      const name = editor.querySelector('.cat-name-input').value.trim();
-      if (!name) continue;
-      const subs = Array.from(editor.querySelectorAll('.subs-list > span'))
-        .map(el => {
-          return (el.childNodes[0]?.textContent || '').trim();
-        })
-        .filter(Boolean);
-      newCustomCats.push({ id, name, subs });
-    }
-
-    for (const c of newCustomCats) {
-      try {
-        await db.saveCat(c);
-      } catch (err) {
-        console.error('Failed to save category', c, err);
-        toast('⚠ Failed to save one or more categories. Check console.');
-        return;
-      }
-    }
-    S.customCats = newCustomCats;
-    renderSidebar();
-    renderContent();
+    <div class="modal-foot"><button class="btn btn-ghost" id="ap-cancel">Cancel</button><button class="btn btn-primary" id="ap-save">Save</button></div></div>`;
+  document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.querySelector('#ap-cancel').onclick = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  ov.querySelector('#ap-save').onclick = async () => {
+    S.uiFont = ov.querySelector('#ap-ui-font').value; S.monoFont = ov.querySelector('#ap-mono-font').value;
+    applyFontSettings(); await db.setSetting('uiFont', S.uiFont); await db.setSetting('monoFont', S.monoFont);
+    ov.remove(); toast('✓ Fonts saved');
   };
-
-  ov.querySelector('.modal-x').onclick = async () => { await saveChanges(); origClose(); };
-  ov.querySelector('#mc-close').onclick = async () => { await saveChanges(); origClose(); };
-  ov.addEventListener('click', e => { if (e.target === ov) ov.querySelector('#mc-close').click(); });
-
-  // ── Add‑subcategory button ──
-  ov.querySelectorAll('.add-sub-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const container = btn.closest('.cat-editor');
-      const input = container.querySelector('.new-sub-input');
-      const sub = input.value.trim();
-    if (!sub) return;
-
-    const chip = document.createElement('span');
-    chip.style = 'display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;';
-    chip.innerHTML = `${esc(sub)} <button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button>`;
-    chip.querySelector('.sub-remove').addEventListener('click', () => chip.remove());
-
-      // Insert chip BEFORE the input's parent div, so it sits among the other chips
-      const inputDiv = input.closest('div');
-      inputDiv.parentNode.insertBefore(chip, inputDiv);
-      input.value = '';
-    });
-  });
-
-  // Remove subcategory
-  ov.querySelectorAll('.sub-remove').forEach(btn => btn.addEventListener('click', () => btn.parentElement.remove()));
 }
 
-/* ═══════════════════════════════════════════════════
-   MANAGE TAGS MODAL (rename/delete globally)
-   ═══════════════════════════════════════════════════ */
 async function showManageTagsModal() {
   const tags = allTags();
   const ov = document.createElement('div'); ov.className = 'overlay';
@@ -1604,7 +1808,31 @@ async function showManageTagsModal() {
   ov.querySelector('#mt-close').onclick = () => ov.remove();
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 
-  // Rename / delete logic
+  // ── Function to refresh the tag list without closing the modal ──
+  const refreshTagList = () => {
+    const updatedTags = allTags();
+    const list = ov.querySelector('#mt-tag-list');
+    if (updatedTags.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:2rem">No tags yet</div>';
+      return;
+    }
+    list.innerHTML = updatedTags.map(({tag, count}) => `
+      <div class="tag-editor" data-tag="${esc(tag)}" style="display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0;border-bottom:1px solid var(--border)">
+        <span style="flex:1;font-size:0.9rem;color:var(--text-primary)">#${esc(tag)}</span>
+        <span style="font-size:0.7rem;color:var(--text-muted)">${count} prompt${count!==1?'s':''}</span>
+        <input class="form-input edit-tag-input" placeholder="Rename" style="width:8rem;display:none">
+        <button class="btn btn-ghost rename-btn" style="height:1.8rem;font-size:0.75rem;padding:0 0.6rem">Rename</button>
+        <button class="btn btn-ghost delete-btn" style="height:1.8rem;font-size:0.75rem;color:var(--red);border-color:rgba(240,107,107,.35)">Delete</button>
+        <button class="btn btn-ghost save-rename-btn" style="height:1.8rem;font-size:0.75rem;display:none">Save</button>
+        <button class="btn btn-ghost cancel-rename-btn" style="height:1.8rem;font-size:0.75rem;display:none">Cancel</button>
+      </div>
+    `).join('');
+    // Re-attach listeners to the new elements
+    attachTagEditorListeners();
+  };
+
+  // ── Function that attaches listeners to all tag‑editor rows ──
+  const attachTagEditorListeners = () => {
   ov.querySelectorAll('.tag-editor').forEach(row => {
     const tag = row.dataset.tag;
     const renameBtn = row.querySelector('.rename-btn');
@@ -1612,19 +1840,23 @@ async function showManageTagsModal() {
     const saveBtn = row.querySelector('.save-rename-btn');
     const cancelBtn = row.querySelector('.cancel-rename-btn');
     const input = row.querySelector('.edit-tag-input');
-    const nameSpan = row.querySelector('span');
 
     renameBtn.addEventListener('click', () => {
       input.style.display = ''; renameBtn.style.display = 'none'; deleteBtn.style.display = 'none';
       saveBtn.style.display = ''; cancelBtn.style.display = '';
-      input.value = tag;
-      input.focus();
+      input.value = tag; input.focus();
     });
-
     cancelBtn.addEventListener('click', () => {
       input.style.display = 'none'; renameBtn.style.display = ''; deleteBtn.style.display = '';
       saveBtn.style.display = 'none'; cancelBtn.style.display = 'none';
     });
+    
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
 
     saveBtn.addEventListener('click', async () => {
       const newTag = input.value.trim().toLowerCase().replace(/\s+/g,'-');
@@ -1636,7 +1868,7 @@ async function showManageTagsModal() {
         }
       }
       renderSidebar(); renderContent();
-      ov.remove(); showManageTagsModal(); // refresh modal
+        refreshTagList();   // ← update in place, no flicker
     });
 
     deleteBtn.addEventListener('click', async () => {
@@ -1648,9 +1880,13 @@ async function showManageTagsModal() {
         }
       }
       renderSidebar(); renderContent();
-      ov.remove(); showManageTagsModal(); // refresh modal
+        refreshTagList();
     });
   });
+  };
+
+  // Attach listeners for the first time
+  attachTagEditorListeners();
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1668,6 +1904,7 @@ function settingsAction(action) {
     <div class="modal-body"><div class="about-wrap">
       <div class="about-desc">A lightweight, offline-first application for organizing, browsing, searching, previewing, and reusing AI prompts. No server. No account. No nonsense.</div>
       <a class="made-by" href="https://omeoni.substack.com" target="_blank" rel="noopener">Made with ❤️ by KungPowUnicorn</a>
+      <a class="made-by" href="https://github.com/KungPowUnicorn/gia" target="_blank" rel="noopener" style="color:var(--blue)">View on GitHub</a>
       <a href="https://ko-fi.com/E1E71WM9SA" target="_blank" rel="noopener"><img class="kofi-img" src="https://storage.ko-fi.com/cdn/kofi6.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
     </div></div></div>`;
     document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
@@ -1676,7 +1913,7 @@ function settingsAction(action) {
   if (action === 'shortcuts') {
     const ov = document.createElement('div'); ov.className = 'overlay';
     ov.innerHTML = `<div class="modal sm"><div class="modal-head"><div class="modal-title">⌨️ Keyboard Shortcuts</div><button class="modal-x">×</button></div>
-    <div class="modal-body"><table style="width:100%;border-collapse:collapse">${[['N','New prompt'],['/','Focus search'],['Esc','Close panel / modal'],['G','Grid view'],['L','List view'],['Ctrl+E','Backup']].map(([k,d])=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.6429rem 0;width:6.4286rem"><kbd>${k}</kbd></td><td style="padding:0.6429rem 0;color:var(--text-secondary);font-size:0.8929rem">${d}</td></tr>`).join('')}</table></div></div>`;
+    <div class="modal-body"><table style="width:100%;border-collapse:collapse">${[['N','New prompt'],['Ctrl+S','Save Prompt'],['/','Focus search'],['Esc','Close panel / modal'],['G','Grid view'],['L','List view'],['Ctrl+E','Backup']].map(([k,d])=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.6429rem 0;width:6.4286rem"><kbd>${k}</kbd></td><td style="padding:0.6429rem 0;color:var(--text-secondary);font-size:0.8929rem">${d}</td></tr>`).join('')}</table></div></div>`;
     document.body.appendChild(ov); ov.querySelector('.modal-x').onclick = () => ov.remove(); ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
     return;
   }
@@ -1764,13 +2001,215 @@ async function doImport(file) {
     const confirm_merge = confirm(`Import ${data.prompts.length} prompts? Duplicates (by ID) will be skipped.`); if(!confirm_merge) return;
     const existIds = new Set(S.prompts.map(p=>p.id)); let added=0;
     for(const p of data.prompts){ if(!existIds.has(p.id)){ await db.savePrompt(p); S.prompts.push(p); added++; } }
-    if(data.categories){ for(const cat of data.categories){ if(!S.customCats.find(c=>c.id===cat.id)&&!DEFAULT_CATS.find(d=>d.id===cat.id)){ await db.saveCat(cat); S.customCats.push(cat); } } }
+    if(data.categories){
+      for(const cat of data.categories){
+        const existingCustom = S.customCats.find(c=>c.id===cat.id);
+        if (existingCustom) { Object.assign(existingCustom, cat); await db.saveCat(existingCustom); }
+        else if (DEFAULT_CATS.some(d=>d.id===cat.id)) { await db.saveCat(cat); S.customCats.push(cat); }
+        else { await db.saveCat(cat); S.customCats.push(cat); }
+      }
+    }
     renderSidebar(); renderContent(); toast(`✓ Imported ${added} new prompt${added!==1?'s':''}`);
   } catch(e){ toast('⚠ Failed to parse file — is it a valid GIA backup?'); }
 }
 
 /* ═══════════════════════════════════════════════════
-   STATUS & INIT
+   MANAGE CATEGORIES MODAL
+   ═══════════════════════════════════════════════════ */
+async function showManageCatsModal() {
+  const cats = allCats();
+  const ov = document.createElement('div'); ov.className = 'overlay';
+  ov.innerHTML = `<div class="modal md"><div class="modal-head"><div class="modal-title">Manage Categories</div><button class="modal-x">×</button></div>
+  <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+    <div style="font-size:0.8214rem;color:var(--text-muted);margin-bottom:0.8571rem">Edit names, subs, or icons. Default categories cannot be deleted.</div>
+    <div id="mc-cat-list">${cats.map(c => {
+      const isDefault = DEFAULT_CATS.some(d => d.id === c.id);
+      return `<div class="cat-editor" data-id="${esc(c.id)}" style="border:1px solid var(--border);border-radius:var(--radius);padding:0.8571rem;margin-bottom:0.5714rem;background:var(--bg-base)">
+        <div style="display:flex;align-items:center;gap:0.5714rem;margin-bottom:0.4286rem;">
+          <div class="icon-picker-btn" style="cursor:pointer;font-size:1.1429rem" title="Click to change icon">${getCatIcon(c)}</div>
+          <input class="form-input cat-name-input" value="${esc(c.name)}" style="flex:1" placeholder="Category name">
+          ${isDefault ? '' : '<button class="btn btn-ghost cat-delete-btn" style="color:var(--red);border-color:rgba(240,107,107,.35);height:2rem;padding:0 0.7rem;font-size:0.8rem">Delete</button>'}
+        </div>
+        <div class="subs-list" style="display:flex;flex-wrap:wrap;gap:0.4286rem;align-items:center;">
+          ${(c.subs||[]).map(sub => `<span style="display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;">${esc(sub)}<button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button></span>`).join('')}
+          <div style="display:flex;gap:0.2857rem;align-items:center;">
+            <input class="form-input new-sub-input" placeholder="New subcategory" style="width:9.2857rem;height:2rem;font-size:0.8571rem;">
+            <button class="btn btn-ghost add-sub-btn" style="height:2rem;font-size:0.7857rem;padding:0 0.5714rem;">Add</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+    <button class="btn btn-ghost" id="mc-add-cat" style="width:100%">＋ Add Category</button>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" id="mc-close">Done</button></div></div>`;
+  document.body.appendChild(ov);
+
+  const origClose = () => ov.remove();
+
+  // Icon picker (same as before)
+  ov.querySelectorAll('.icon-picker-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const editor = btn.closest('.cat-editor');
+      const currentIconKey = editor.dataset.iconKey || cats.find(c => c.id === editor.dataset.id)?.iconKey || 'other';
+      const picker = document.createElement('div');
+      picker.className = 'overlay';
+      picker.style.zIndex = '1100';
+      picker.innerHTML = `<div class="modal sm" style="width:auto;max-width:90vw;">
+        <div class="modal-head"><div class="modal-title">Choose Icon</div><button class="modal-x">×</button></div>
+        <div class="modal-body" style="display:grid;grid-template-columns: repeat(5,1fr);gap:0.5rem;padding:1rem">
+          ${Object.entries(ICON_SET).map(([key,svg]) => `<button class="icon-option" data-key="${key}" style="background:${key===currentIconKey?'var(--accent-dim)':'transparent'};border:1px solid var(--border);border-radius:0.5rem;padding:0.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem">${svg}</button>`).join('')}
+        </div>
+      </div>`;
+      document.body.appendChild(picker);
+      picker.querySelector('.modal-x').onclick = () => picker.remove();
+      picker.addEventListener('click', e => { if (e.target === picker) picker.remove(); });
+      picker.querySelectorAll('.icon-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          editor.dataset.iconKey = opt.dataset.key;
+          btn.innerHTML = ICON_SET[opt.dataset.key];
+          picker.remove();
+        });
+      });
+    });
+  });
+
+  // Delete custom category
+  ov.querySelectorAll('.cat-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const editor = btn.closest('.cat-editor');
+      const id = editor.dataset.id;
+      if (!confirm('Delete this custom category? Prompts in it will remain with the old name.')) return;
+      editor.remove();
+    });
+  });
+
+  // Add subcategory
+  ov.querySelectorAll('.add-sub-btn').forEach(btn => {
+      const container = btn.closest('.cat-editor');
+      const input = container.querySelector('.new-sub-input');
+      const addBtn = btn;  // reference
+
+      // Click handler
+      btn.addEventListener('click', () => {
+      const sub = input.value.trim();
+      if (!sub) return;
+      const chip = document.createElement('span');
+      chip.style = 'display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;';
+      chip.innerHTML = `${esc(sub)} <button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button>`;
+      chip.querySelector('.sub-remove').addEventListener('click', () => chip.remove());
+      const inputDiv = input.closest('div');
+      inputDiv.parentNode.insertBefore(chip, inputDiv);
+      input.value = '';
+    });
+
+      // ── Press Enter in the input → add ──
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addBtn.click();
+        }
+      });
+  });
+
+  // Remove subcategory
+  ov.querySelectorAll('.sub-remove').forEach(btn => btn.addEventListener('click', () => btn.parentElement.remove()));
+
+  // Add category button
+  ov.querySelector('#mc-add-cat').addEventListener('click', () => {
+    const list = ov.querySelector('#mc-cat-list');
+    const id = 'custom_' + uid();
+    const html = `<div class="cat-editor" data-id="${id}" style="border:1px solid var(--border);border-radius:var(--radius);padding:0.8571rem;margin-bottom:0.5714rem;background:var(--bg-base)">
+        <div style="display:flex;align-items:center;gap:0.5714rem;margin-bottom:0.4286rem;">
+          <div class="icon-picker-btn" style="cursor:pointer;font-size:1.1429rem" title="Click to change icon">${ICON_SET.other}</div>
+          <input class="form-input cat-name-input" value="New Category" style="flex:1" placeholder="Category name">
+          <button class="btn btn-ghost cat-delete-btn" style="color:var(--red);border-color:rgba(240,107,107,.35);height:2rem;padding:0 0.7rem;font-size:0.8rem">Delete</button>
+        </div>
+        <div class="subs-list" style="display:flex;flex-wrap:wrap;gap:0.4286rem;align-items:center;">
+          <div style="display:flex;gap:0.2857rem;align-items:center;">
+            <input class="form-input new-sub-input" placeholder="New subcategory" style="width:9.2857rem;height:2rem;font-size:0.8571rem;">
+            <button class="btn btn-ghost add-sub-btn" style="height:2rem;font-size:0.7857rem;padding:0 0.5714rem;">Add</button>
+          </div>
+        </div>
+      </div>`;
+    list.insertAdjacentHTML('beforeend', html);
+    const newEditor = list.lastElementChild;
+    newEditor.querySelector('.icon-picker-btn').addEventListener('click', () => {
+      const btnIcon = newEditor.querySelector('.icon-picker-btn');
+      const currentIconKey = newEditor.dataset.iconKey || 'other';
+      const picker = document.createElement('div');
+      picker.className = 'overlay'; picker.style.zIndex = '1100';
+      picker.innerHTML = `<div class="modal sm" style="width:auto;max-width:90vw;">
+        <div class="modal-head"><div class="modal-title">Choose Icon</div><button class="modal-x">×</button></div>
+        <div class="modal-body" style="display:grid;grid-template-columns: repeat(5,1fr);gap:0.5rem;padding:1rem">
+          ${Object.entries(ICON_SET).map(([key,svg]) => `<button class="icon-option" data-key="${key}" style="background:${key===currentIconKey?'var(--accent-dim)':'transparent'};border:1px solid var(--border);border-radius:0.5rem;padding:0.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem">${svg}</button>`).join('')}
+        </div>
+      </div>`;
+      document.body.appendChild(picker);
+      picker.querySelector('.modal-x').onclick = () => picker.remove();
+      picker.addEventListener('click', e => { if (e.target === picker) picker.remove(); });
+      picker.querySelectorAll('.icon-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          newEditor.dataset.iconKey = opt.dataset.key;
+          btnIcon.innerHTML = ICON_SET[opt.dataset.key];
+          picker.remove();
+        });
+      });
+    });
+    newEditor.querySelector('.cat-delete-btn').addEventListener('click', () => {
+      if (!confirm('Delete this custom category?')) return;
+      newEditor.remove();
+    });
+
+    newEditor.querySelector('.add-sub-btn').addEventListener('click', () => {
+      const input = newEditor.querySelector('.new-sub-input');
+      const sub = input.value.trim();
+      if (!sub) return;
+      const chip = document.createElement('span');
+      chip.style = 'display:inline-flex;align-items:center;gap:0.2857rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:0.2857rem;padding:0.2143rem 0.5714rem;font-size:0.8571rem;';
+      chip.innerHTML = `${esc(sub)} <button class="chip-x sub-remove" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;">×</button>`;
+      chip.querySelector('.sub-remove').addEventListener('click', () => chip.remove());
+      const inputDiv = input.closest('div');
+      inputDiv.parentNode.insertBefore(chip, inputDiv);
+      input.value = '';
+    });
+
+    newEditor.querySelector('.new-sub-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        newEditor.querySelector('.add-sub-btn').click();
+      }
+    });
+  });
+
+  const saveChanges = async () => {
+    const editors = ov.querySelectorAll('.cat-editor');
+    const newCustomCats = [];
+    for (const editor of editors) {
+      const id = editor.dataset.id;
+      const name = editor.querySelector('.cat-name-input').value.trim();
+      if (!name) continue;
+      const subs = Array.from(editor.querySelectorAll('.subs-list > span'))
+        .map(el => (el.childNodes[0]?.textContent || '').trim())
+        .filter(Boolean);
+      const iconKey = editor.dataset.iconKey || allCats().find(c => c.id === id)?.iconKey || 'other';
+      newCustomCats.push({ id, name, iconKey, subs });
+    }
+    for (const c of newCustomCats) {
+      try { await db.saveCat(c); } catch (err) { console.error(err); toast('⚠ Failed to save one or more categories.'); return; }
+    }
+    S.customCats = newCustomCats;
+    renderSidebar();
+    renderContent();
+  };
+
+  ov.querySelector('.modal-x').onclick = async () => { await saveChanges(); origClose(); };
+  ov.querySelector('#mc-close').onclick = async () => { await saveChanges(); origClose(); };
+  ov.addEventListener('click', e => { if (e.target === ov) ov.querySelector('#mc-close').click(); });
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT & EVENT BINDING
    ═══════════════════════════════════════════════════ */
 function updateStatus() {
   const dot = document.getElementById('stat-dot'), backupEl = document.getElementById('stat-backup');
@@ -1780,8 +2219,14 @@ function updateStatus() {
 
 function initEvents() {
   document.getElementById('search-input').addEventListener('input', e=>{ S.filter.search=e.target.value; renderContent(); });
-  document.getElementById('sb-all').addEventListener('click',()=>setFilter('all',null));
-  document.getElementById('sb-fav').addEventListener('click',()=>setFilter('fav',null));
+  document.getElementById('sb-all').addEventListener('click',()=>{
+    setFilter('all',null);
+    if (window.innerWidth <= 850) document.getElementById('sidebar').classList.remove('open');
+  });
+  document.getElementById('sb-fav').addEventListener('click',()=>{
+    setFilter('fav',null);
+    if (window.innerWidth <= 850) document.getElementById('sidebar').classList.remove('open');
+  });
   document.getElementById('btn-add').addEventListener('click',()=>promptModal(null));
   document.getElementById('btn-grid').addEventListener('click',()=>setView('grid'));
   document.getElementById('btn-list').addEventListener('click',()=>setView('list'));
@@ -1796,20 +2241,56 @@ function initEvents() {
   document.getElementById('btn-fontsize').addEventListener('click', cycleFontSize);
   document.getElementById('btn-hamburger').addEventListener('click', toggleSidebar);
 
+  document.getElementById('tags-toggle').addEventListener('click', () => {
+    const cloud = document.getElementById('tags-cloud');
+    cloud.style.display = cloud.style.display === 'none' ? '' : 'none';
+  });
+
   document.addEventListener('keydown', e=>{
-    const isInput=e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT';
-    if(e.key==='Escape'){
-      const ov=document.querySelector('.overlay'); if(ov){ov.remove();return;}
-      if(S.selectedId){closeDetail();return;}
-      if(document.getElementById('settings-dd').style.display!=='none'){document.getElementById('settings-dd').style.display='none';return;}
+    const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT';
+
+    if (e.key === 'Escape') {
+      // 1. Close full‑page prompt overlay if it's open
+      const fpOverlay = document.getElementById('fullpage-prompt-overlay');
+      if (fpOverlay && fpOverlay.classList.contains('open')) {
+        const promptEl = fpOverlay._promptEl;
+        const returnParent = fpOverlay._returnParent;
+        if (promptEl && returnParent) {
+          returnParent.appendChild(promptEl);
+        }
+        fpOverlay.classList.remove('open');
+        fpOverlay._returnParent = null;
+        fpOverlay._promptEl = null;
+        return;
+      }
+
+      // 2. Close any active modal overlay
+      const ov = document.querySelector('.overlay');
+      if (ov) { ov.remove(); return; }
+
+      // 3. Close the detail panel if it's open
+      if (S.selectedId) { closeDetail(); return; }
+
+      // 4. Close the settings dropdown if it's visible
+      const dd = document.getElementById('settings-dd');
+      if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
     }
-    if(!isInput){
-      if(e.key==='n'||e.key==='N'){ promptModal(null); return; }
-      if(e.key==='/'){ e.preventDefault(); document.getElementById('search-input').focus(); return; }
-      if(e.key==='g'||e.key==='G'){ setView('grid'); return; }
-      if(e.key==='l'||e.key==='L'){ setView('list'); return; }
+
+    if (!isInput) {
+      if (e.key === 'n' || e.key === 'N') { promptModal(null); return; }
+      if (e.key === '/') { e.preventDefault(); document.getElementById('search-input').focus(); return; }
+      if (e.key === 'g' || e.key === 'G') { setView('grid'); return; }
+      if (e.key === 'l' || e.key === 'L') { setView('list'); return; }
     }
-    if((e.ctrlKey||e.metaKey)&&e.key==='e'){ e.preventDefault(); showBackupModal(); }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+      e.preventDefault();
+      showBackupModal();
+    }
+  });
+
+    window.addEventListener('resize', () => {
+    applyPinState();
   });
 
   let dragCount=0;
@@ -1832,6 +2313,7 @@ async function init() {
     await initTheme();
     S.uiFont = await db.getSetting('uiFont') || 'Outfit'; S.monoFont = await db.getSetting('monoFont') || 'JetBrains Mono'; S.fontSize = await db.getSetting('fontSize') || '14px';
     applyFontSettings(); setView('grid'); renderSidebar(); renderContent(); updateStatus(); initEvents();
+    await initPin();
     document.getElementById('stat-version').textContent = `GIA v${APP_VERSION}`;
   } catch(err) {
     document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:0.7143rem;font-family:monospace;color:#f06b6b"><div style="font-size:1.2857rem">⚠ GIA failed to initialize</div><div style="font-size:0.8571rem;color:#666">${err.message}</div><div style="font-size:0.7857rem;color:#444">IndexedDB may be unavailable in private/incognito mode</div></div>`;
