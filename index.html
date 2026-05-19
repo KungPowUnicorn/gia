@@ -610,7 +610,6 @@ kbd { font-size: 0.7143rem; font-family: var(--font-mono); background: var(--bg-
     <div class="dd-divider"></div>
     <button class="dd-item" data-action="about">About</button>
     <div class="dd-divider"></div>
-    <button class="dd-item" data-action="fetch-previews">Refresh Link Previews</button>
     <button class="dd-item danger" data-action="clear">Clear All Data</button>
   </div>
 
@@ -1016,48 +1015,6 @@ function generateThumbnail(fileObj, maxW = 200) {
       resolve(null);
     }
   });
-}
-
-/* ═══════════════════════════════════════════════════
-   LINK PREVIEW REFRESH
-   ═══════════════════════════════════════════════════ */
-async function fetchLinkPreviews(force = false) {
-  const candidates = S.prompts.filter(p =>
-    p.link && (force || !p.previewData) && IMG_EXT.test(p.link)
-  );
-  if (!candidates.length) {
-    toast('No image links found to preview');
-    return;
-  }
-  toast(`Fetching ${candidates.length} preview(s)…`);
-  let count = 0;
-  for (const p of candidates) {
-    await new Promise(resolve => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const timer = setTimeout(() => { img.src = ''; resolve(); }, 6000);
-      img.onload = async () => {
-        clearTimeout(timer);
-        try {
-          const scale = Math.min(1, 200 / img.width);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          p.previewData = canvas.toDataURL('image/jpeg', 0.75);
-          await db.savePrompt(p);
-          count++;
-        } catch { /* canvas tainted by CORS — skip silently */ }
-        resolve();
-      };
-      img.onerror = () => { clearTimeout(timer); resolve(); };
-      img.src = p.link;
-    });
-  }
-  renderSidebar();
-  renderContent();
-  if (S.selectedId) renderDetail(S.selectedId);
-  toast(`✓ Updated ${count} of ${candidates.length} preview(s)`);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1911,7 +1868,6 @@ function settingsAction(action) {
   if (action === 'manage-tags') { showManageTagsModal(); return; }
   if (action === 'fonts') { showFontsModal(); return; }
   if (action === 'backup') { showBackupModal(); return; }
-  if (action === 'fetch-previews') { fetchLinkPreviews(true); return; }
   if (action === 'about') {
     const ov = document.createElement('div'); ov.className = 'overlay';
     ov.innerHTML = `<div class="modal sm"><div class="modal-head"><div class="modal-title" style="text-align:center;flex:1;">Gaslighting Instructions Archiver</div><button class="modal-x">×</button></div>
