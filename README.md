@@ -115,8 +115,6 @@ If you're not technical, skip this. But if you're nosy:
 
 ---
 
-## Made with ❤️ by [KungPowUnicorn](https://substack.com/).
-
 If GIA saves you time, makes you smile, or helps you create something amazing, consider [buying me a coffee](https://ko-fi.com/E1E71WM9SA). ☕
 
 ---
